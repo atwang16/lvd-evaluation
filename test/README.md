@@ -1,0 +1,1 @@
+This folder contains some basic test programs I wrote to make sure that the project is setup correctly and that libraries are working as expected, as well as to do basic tests of descriptor source code. This folder will be removed before making the final version available. 
