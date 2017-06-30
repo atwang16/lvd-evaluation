@@ -26,6 +26,8 @@
 
 using namespace boost::filesystem;
 
+#define DEFAULT_OUTPUT_DIR "results/"
+
 /******************************
  * MODIFY FOR EACH DESCRIPTOR *
  ******************************/
@@ -33,12 +35,18 @@ using namespace boost::filesystem;
 // Libraries
 #include "opencv2/xfeatures2d.hpp"
 
-// Constants
-#define DEFAULT_OUTPUT_DIR "evaluation/"
+// Compile-time Constants
 #define DESCRIPTOR "SIFT"    // name of descriptor
 
 void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) {
-	cv::Ptr<cv::Feature2D> f2d = cv::xfeatures2d::SIFT::create(); // use default parameters
+	// default parameters
+	int nfeatures = 0;
+	int nOctaveLayers = 3;
+	double contrastThreshold = 0.04;
+	double edgeThreshold = 10;
+	double sigma = 1.6;
+
+	cv::Ptr<cv::Feature2D> f2d = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
 
 	// detect keypoints
 	f2d->detect(image, keypoints);
@@ -120,7 +128,7 @@ int main(int argc, char *argv[]) {
 		cv::Mat img;
 		img = cv::imread(fname, CV_LOAD_IMAGE_COLOR);
 
-		std::string dt_fname;
+		std::string dt_fname_desc, dt_fname_key;
 
 		// get the type name (e.g. ref, e1, e2, etc.)
 		std::vector<std::string> strs;
@@ -133,19 +141,33 @@ int main(int argc, char *argv[]) {
 		boost::split(strs_, img_name, boost::is_any_of("."));
 		std::string tp =  strs_[0];
 
-		dt_fname = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + ".csv";
+		dt_fname_desc = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_descriptor.csv";
+		dt_fname_key = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_keypoint.csv";
 
 		// Compute descriptors
 		cv::Mat descriptors;
 		std::vector<cv::KeyPoint> keypoints;
 		detectAndCompute(img, keypoints, descriptors);
 
+		// Open the keypoint file for saving
+		std::ofstream f_key;
+		f_key.open(dt_fname_key);
+		for(int i = 0; i < keypoints.size(); i++) {
+			f_key << keypoints[i].pt.x     << ",";
+			f_key << keypoints[i].pt.y     << ",";
+			f_key << keypoints[i].angle    << ",";
+			f_key << keypoints[i].octave   << ",";
+			f_key << keypoints[i].response << std::endl;
+		}
+		f_key.close();
+		std::cout << "Extraction complete. Keypoints stored at " << dt_fname_key << "\n";
+
 		// Open the descriptor file for saving
-		std::ofstream f;
-		f.open(dt_fname);
-		f << cv::format(descriptors, cv::Formatter::FMT_CSV) << std::endl;
-		f.close();
-		std::cout << "Extraction complete. Stored at " << dt_fname << "\n";
+		std::ofstream f_desc;
+		f_desc.open(dt_fname_desc);
+		f_desc << cv::format(descriptors, cv::Formatter::FMT_CSV) << std::endl;
+		f_desc.close();
+		std::cout << "Extraction complete. Descriptors stored at " << dt_fname_desc << "\n";
 	}
 	return 0;
 }
