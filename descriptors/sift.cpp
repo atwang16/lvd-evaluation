@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
 		for(int i = 0; i < keypoints.size(); i++) {
 			f_key << keypoints[i].pt.x     << ",";
 			f_key << keypoints[i].pt.y     << ",";
+			f_key << keypoints[i].size     << ",";
 			f_key << keypoints[i].angle    << ",";
 			f_key << keypoints[i].octave   << ",";
 			f_key << keypoints[i].response << std::endl;
