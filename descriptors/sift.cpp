@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "Database: " << input << "\n";
 		std::vector<std::string> input_split;
 		boost::split(input_split, input, boost::is_any_of("/"));
-		main_dir = input_split[input_split.size() - 1] + "/";
+		main_dir = input_split[input_split.size() - 2] + "/";
 
 		// iterate through sequence folders of directory
 		for(auto& entry : boost::make_iterator_range(directory_iterator(input), {})) {

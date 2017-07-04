@@ -16,11 +16,7 @@
 
 #define FIR_NEAR 0
 #define SEC_NEAR 1
-#define DIST_RATIO_THRESH 0.8f
-#define KP_DIST_THRESH 2.5f
 //#define DEBUG
-#define LIMIT_CORRECT_DISPLAYED
-#define NUMBER_KP_TO_DISPLAY 50
 
 using namespace std;
 using namespace cv;
@@ -34,31 +30,61 @@ int main(int argc, char *argv[]) {
 	Mat kp_mat_1, kp_mat_2;
 	string dist_metric, desc_name, results = "", img_1_name, img_2_name;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
+	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
+	int nb_kp_to_display = 50, cap_correct_displayed = 1, verbose = 0;
 
-#ifdef DEBUG
-	cout << "Starting execution.\n";
-#endif
-	if(argc < 10) {
-		cout << "Usage ./basetest desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [results]\n";
+	if(argc < 11) {
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [results]\n";
 		return -1;
 	}
 
-	desc_name = argv[1];
-	img_1 = imread(argv[2], CV_LOAD_IMAGE_COLOR);
+	// Load parameters
+	ifstream params(argv[1]);
+	string line, var, value;
+	std::vector<std::string> line_split;
+
+	while(getline(params, line)) {
+		boost::split(line_split, line, boost::is_any_of("="));
+		var = line_split[0];
+		value = line_split.back();
+		if(var == "DIST_RATIO_THRESH") {
+			dist_ratio_thresh = stof(value);
+		}
+		else if(var == "KP_DIST_THRESH") {
+			kp_dist_thresh = stof(value);
+		}
+		else if(var == "CAP_CORRECT_DISPLAYED") {
+			cap_correct_displayed = stof(value);
+		}
+		else if(var == "NB_KP_TO_DISPLAY") {
+			nb_kp_to_display = stof(value);
+		}
+		else if(var == "VERBOSE") {
+			verbose = stof(value);
+		}
+	}
+
+	if(verbose) {
+		cout << "Starting execution.\n";
+	}
+
+	// Parse remaining arguments
+	desc_name = argv[2];
+	img_1 = imread(argv[3], CV_LOAD_IMAGE_COLOR);
 	std::vector<std::string> img_1_path_split;
-	boost::split(img_1_path_split, argv[2], boost::is_any_of("/,."));
+	boost::split(img_1_path_split, argv[3], boost::is_any_of("/,."));
 	img_1_name = img_1_path_split[img_1_path_split.size()-2];
-#ifdef DEBUG
-	cout << "Read image 1.\n";
-#endif
-	desc_1 = parse_file(argv[3], ',');
-#ifdef DEBUG
-	cout << "Parsed descriptor 1.\n";
-#endif
-	kp_mat_1 = parse_file(argv[4], ',');
-#ifdef DEBUG
-	cout << "Parsed " << kp_mat_1.rows << " keypoints for image 1.\n";
-#endif
+	if(verbose) {
+		cout << "Read image 1.\n";
+	}
+	desc_1 = parse_file(argv[4], ',');
+	if(verbose) {
+		cout << "Parsed descriptor 1.\n";
+	}
+	kp_mat_1 = parse_file(argv[5], ',');
+	if(verbose) {
+		cout << "Parsed " << kp_mat_1.rows << " keypoints for image 1.\n";
+	}
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp_1 = KeyPoint();
 		kp_1.pt.x = kp_mat_1.at<float>(i, 0);
@@ -69,21 +95,21 @@ int main(int argc, char *argv[]) {
 		kp_1.response = kp_mat_1.at<float>(i, 5);
 		kp_vec_1.push_back(kp_1);
 	}
-	img_2 = imread(argv[5], CV_LOAD_IMAGE_COLOR);
+	img_2 = imread(argv[6], CV_LOAD_IMAGE_COLOR);
 	std::vector<std::string> img_2_path_split;
-	boost::split(img_2_path_split, argv[5], boost::is_any_of("/,."));
+	boost::split(img_2_path_split, argv[6], boost::is_any_of("/,."));
 	img_2_name = img_2_path_split[img_2_path_split.size()-2];
-#ifdef DEBUG
-	cout << "Read image 2.\n";
-#endif
-	desc_2 = parse_file(argv[6], ',');
-#ifdef DEBUG
-	cout << "Parsed descriptor 2.\n";
-#endif
-	kp_mat_2 = parse_file(argv[7], ',');
-#ifdef DEBUG
-	cout << "Parsed " << kp_mat_2.rows << " keypoints for image 2.\n";
-#endif
+	if(verbose) {
+		cout << "Read image 2.\n";
+	}
+	desc_2 = parse_file(argv[7], ',');
+	if(verbose) {
+		cout << "Parsed descriptor 2.\n";
+	}
+	kp_mat_2 = parse_file(argv[8], ',');
+	if(verbose) {
+		cout << "Parsed " << kp_mat_2.rows << " keypoints for image 2.\n";
+	}
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp_2 = KeyPoint();
 		kp_2.pt.x = kp_mat_2.at<float>(i, 0);
@@ -94,15 +120,15 @@ int main(int argc, char *argv[]) {
 		kp_2.response = kp_mat_2.at<float>(i, 5);
 		kp_vec_2.push_back(kp_2);
 	}
-	homography = parse_file(argv[8], ' ');
-	dist_metric = argv[9];
-	if(argc == 11) {
-		results = argv[10];
+	homography = parse_file(argv[9], ' ');
+	dist_metric = argv[10];
+	if(argc >= 12) {
+		results = argv[11];
 	}
 
-#ifdef DEBUG
-	cout << "Processed input.\n";
-#endif
+	if(verbose) {
+		cout << "Processed input.\n";
+	}
 
 
 	// Match descriptors from 1 to 2 using nearest neighbor
@@ -110,22 +136,38 @@ int main(int argc, char *argv[]) {
 	vector< vector<DMatch> > matches;
 	matcher->knnMatch(desc_1, desc_2, matches, 2);
 
+	if(verbose) {
+		cout << "Matched descriptors.\n";
+	}
+
 #ifdef DEBUG
-	cout << "Matched descriptors.\n";
+	vector<float> match_distances, match_indices;
+	vector<string> is_good_match;
 #endif
 
 	// Use the distance ratio to determine whether it is a "good" match
 	vector<DMatch> good_matches;
 	for(int i = 0; i < matches.size(); i++) {
-		if(matches[i][FIR_NEAR].distance < DIST_RATIO_THRESH * matches[i][SEC_NEAR].distance) {
-//		if(1) {
+#ifdef DEBUG
+		match_distances.push_back(matches[i][FIR_NEAR].distance);
+		match_indices.push_back(matches[i][FIR_NEAR].trainIdx);
+#endif
+		if(matches[i][FIR_NEAR].distance < dist_ratio_thresh * matches[i][SEC_NEAR].distance) {
 			good_matches.push_back(matches[i][FIR_NEAR]); // save the first match
+#ifdef DEBUG
+			is_good_match.push_back("good");
+#endif
 		}
+#ifdef DEBUG
+		else {
+			is_good_match.push_back("no match");
+		}
+#endif
 	}
 
-#ifdef DEBUG
-	cout << good_matches.size() << " good matches determined.\n";
-#endif
+	if(verbose) {
+		cout << good_matches.size() << " good matches determined.\n";
+	}
 
 	// Generate all projected keypoints
 	vector< KeyPoint > kp_inbound;
@@ -140,42 +182,88 @@ int main(int argc, char *argv[]) {
 		// check within bounds
 		if(proj_kp_1_2.at<float>(0) >= 0 && proj_kp_1_2.at<float>(0) < img_2.cols && proj_kp_1_2.at<float>(1) >= 0
 				&& proj_kp_1_2.at<float>(1) < img_2.rows) {
-//			kp_inbound.push_back(KeyPoint(proj_kp_1_2.at<float>(0), proj_kp_1_2.at<float>(1), kp.size, kp.angle, kp.response, kp.octave));
 			kp_inbound.push_back(kp);
 		}
 	}
 
-#ifdef DEBUG
-	cout << "Found " << kp_inbound.size() << " keypoints for image 1 after removing ones that projected outside.\n";
-#endif
+	if(verbose) {
+		cout << "Found " << kp_inbound.size() << " keypoints for image 1 after removing ones that projected outside.\n";
+	}
 
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i].queryIdx;
 		int kp_id_2 = good_matches[i].trainIdx;
-		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, KP_DIST_THRESH)) {
+		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
 			correct_matches.push_back(good_matches[i]);
+#ifdef DEBUG
+			is_good_match[good_matches[i].queryIdx] = "correct";
+#endif
 		}
 	}
 
+	if(verbose) {
+		cout << correct_matches.size() << " correct matches found.\n";
+	}
+
 #ifdef DEBUG
-	cout << correct_matches.size() << " correct matches found.\n";
+	vector<float> correct_distances;
+	vector<int> correct_distance_indices;
+	bool correspondence_found;
 #endif
 
 	// Count total number of correspondences
 	int num_correspondences = 0;
-	for(int i = 0; i < kp_inbound.size(); i++) {
+	for(int i = 0; i < kp_vec_1.size(); i++) {
+#ifdef DEBUG
+		correspondence_found = false;
+#endif
 		for(int j = 0; j < kp_vec_2.size(); j++) {
-			if(is_overlapping(kp_inbound[i], kp_vec_2[j], homography, KP_DIST_THRESH)) {
+			if(is_overlapping(kp_vec_1[i], kp_vec_2[j], homography, kp_dist_thresh)) {
+#ifdef DEBUG
+				correct_distance_indices.push_back(j);
+				correct_distances.push_back((float)norm(desc_1.row(i), desc_2.row(j)));
+				correspondence_found = true;
+#endif
 				num_correspondences++;
 				break;
 			}
 		}
+#ifdef DEBUG
+		if(!correspondence_found) {
+			correct_distances.push_back(numeric_limits<double>::quiet_NaN());
+			correct_distance_indices.push_back(-1);
+		}
+#endif
+	}
+
+	if(verbose) {
+		cout << num_correspondences << " correct correspondences among the given keypoints.\n\n";
 	}
 
 #ifdef DEBUG
-	cout << num_correspondences << " correct correspondences among the given keypoints.\n\n";
+	ofstream debug_file;
+	debug_file.open(results + "debug_" + img_1_name + "_to_" + img_2_name + ".csv");
+	for(int i = 0; i < kp_vec_1.size(); i++) {
+		debug_file << match_indices[i]            << ","
+				   << match_distances[i]          << ","
+				   << is_good_match[i]            << ","
+				   << correct_distance_indices[i] << ","
+				   << correct_distances[i]        << ",";
+		if((is_good_match[i] == "correct" && correct_distance_indices[i] != -1)
+				|| (is_good_match[i] == "no match" && correct_distance_indices[i] == -1)) {
+			debug_file << "correct" << "\n";
+		}
+		else if((is_good_match[i] == "good" && correct_distance_indices[i] == -1)
+				|| (is_good_match[i] == "no match" && correct_distance_indices[i] != -1)) {
+			debug_file << "incorrect" << "\n";
+		}
+		else if((is_good_match[i] == "good" && correct_distance_indices[i] != -1)) {
+			debug_file << "wrong keypoint" << "\n";
+		}
+	}
+	debug_file.close();
 #endif
 
 	// Use data from last step to build metrics
@@ -197,8 +285,8 @@ int main(int argc, char *argv[]) {
 		ofstream f;
 		f.open(results + "eval_" + img_1_name + "_to_" + img_2_name + ".txt");
 		f << "Descriptor:                          " << desc_name              << "\n";
-		f << "Image 1:                             " << argv[2]                << "\n";
-		f << "Image 2:                             " << argv[5]                << "\n";
+		f << "Image 1:                             " << argv[3]                << "\n";
+		f << "Image 2:                             " << argv[6]                << "\n";
 		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
 		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
 		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
@@ -213,38 +301,33 @@ int main(int argc, char *argv[]) {
 	}
 
 
-#ifdef LIMIT_CORRECT_DISPLAYED
 	vector< DMatch >::const_iterator first = correct_matches.begin();
 	vector< DMatch >::const_iterator last;
-	if(correct_matches.size() > NUMBER_KP_TO_DISPLAY) {
-		last = correct_matches.begin() + NUMBER_KP_TO_DISPLAY;
+	if(cap_correct_displayed && correct_matches.size() > nb_kp_to_display) {
+		last = correct_matches.begin() + nb_kp_to_display;
 	}
 	else {
 		last = correct_matches.end();
 	}
-	vector< DMatch > display_matches(first, last);
-
-#else
-	vector< DMatch > display_matches = correct_matches;
-#endif
+	vector< DMatch > display_matches(first, last);;
 
 	// Draw matches
 	if(results != "") {
 		Mat res;
 		drawMatches(img_1, kp_vec_1, img_2, kp_vec_2, display_matches, res, Scalar::all(-1), Scalar::all(-1),
 				vector< char >(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imwrite(results + "res_" + img_1_name + "_to_" + img_2_name + ".png", res);
+		imwrite(results + "disp_" + img_1_name + "_to_" + img_2_name + ".png", res);
 	}
 
 	return 0;
 }
 
-Mat parse_file(string fname, char delimiter) { // TODO: modify to adjust for type
+// TODO: modify to adjust for type
+Mat parse_file(string fname, char delimiter) {
 	ifstream inputfile(fname);
 	string current_line;
 	vector< vector<float> > all_data;
 
-	// TODO: Check for empty lines and skip over them
 	// read each line
 	while(getline(inputfile, current_line)) {
 		if(current_line != "") {
@@ -264,8 +347,6 @@ Mat parse_file(string fname, char delimiter) { // TODO: modify to adjust for typ
 
 	// Place data in OpenCV matrix
 	Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_32F);
-//	cout << all_data.size() << "\n";
-//	cout << vect.rows << "\n";
 	for(int row = 0; row < vect.rows; row++) {
 	   for(int col = 0; col < vect.cols; col++) {
 	      vect.at<float>(row, col) = all_data[row][col];

@@ -8,6 +8,7 @@ image_folder = "datasets"
 results_dir = os.path.join(root_folder, results_folder)
 image_dir = os.path.join(root_folder, image_folder)
 BASE_TEST_PATH_DIR = os.path.join(root_folder, "basetest", "basetest")
+PARAMETERS_FILE_PATH = os.path.join(root_folder, "evaluation", "parameters.txt")
 
 def generate_results(path_addendum):
     img_num = 2
@@ -29,7 +30,7 @@ def generate_results(path_addendum):
     descriptors = []
     keypoints = []
     for file in expand_descr_dir:
-        if file[0] != "." and file[0:3] != "res" and file[0:4] != "eval": # not a .DS_STORE or result file
+        if file[0] != "." and file[0:4] != "disp" and file[0:4] != "eval": # not a .DS_STORE or result file
             if file[5] == "d": # descriptor; of form img#_descriptor.csv
                 descriptors.append(file)
             elif file[5] == "k": # keypoint; of form img#_keypoint.csv
@@ -53,8 +54,8 @@ def generate_results(path_addendum):
         results_path = os.path.join(results_dir, path_addendum + os.sep)
         norm = "L2" # fix this later
 
-        args = [BASE_TEST_PATH_DIR, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path, kp2_path,
-                hom_path, norm, results_path]
+        args = [BASE_TEST_PATH_DIR, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
+                kp2_path, hom_path, norm, results_path]
 
         print(desc_name + ": " + database + " - " + path_addendum + ": " + images[0] + " to " + current_img)
         subprocess.run(args)
