@@ -125,8 +125,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "Extracting descriptors for " << fname << "\n";
 
 		// Read the image
-		cv::Mat img;
-		img = cv::imread(fname, CV_LOAD_IMAGE_COLOR);
+		cv::Mat img = cv::imread(fname, CV_LOAD_IMAGE_COLOR);
 
 		std::string dt_fname_desc, dt_fname_key;
 

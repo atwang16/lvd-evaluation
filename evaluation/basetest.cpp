@@ -131,8 +131,8 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	// Match descriptors from 1 to 2 using nearest neighbor
-	Ptr< BFMatcher > matcher = BFMatcher::create(get_dist_metric(dist_metric));
+	// Match descriptors from 1 to 2 using nearest neighbor ratio
+	Ptr< BFMatcher > matcher = BFMatcher::create(get_dist_metric(dist_metric), false);
 	vector< vector<DMatch> > matches;
 	matcher->knnMatch(desc_1, desc_2, matches, 2);
 
@@ -153,6 +153,7 @@ int main(int argc, char *argv[]) {
 		match_indices.push_back(matches[i][FIR_NEAR].trainIdx);
 #endif
 		if(matches[i][FIR_NEAR].distance < dist_ratio_thresh * matches[i][SEC_NEAR].distance) {
+//		if(1) {
 			good_matches.push_back(matches[i][FIR_NEAR]); // save the first match
 #ifdef DEBUG
 			is_good_match.push_back("good");
@@ -267,7 +268,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 	// Use data from last step to build metrics
-	float match_ratio = (float)good_matches.size() / kp_inbound.size();
+	float match_ratio = (float)good_matches.size() / kp_vec_1.size();
 	float precision = (float)correct_matches.size() / good_matches.size();
 	float matching_score = match_ratio * precision;
 	float recall = (float)correct_matches.size() / num_correspondences;
@@ -288,7 +289,7 @@ int main(int argc, char *argv[]) {
 		f << "Image 1:                             " << argv[3]                << "\n";
 		f << "Image 2:                             " << argv[6]                << "\n";
 		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
-		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
+//		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
 		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
 		f << "Number of Matches:                   " << good_matches.size()    << "\n";
 		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";

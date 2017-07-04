@@ -1,6 +1,6 @@
-Descriptor:                          SIFT
-Image 1:                             ../datasets/Mikolajczyk/graf/img1.ppm
-Image 2:                             ../datasets/Mikolajczyk/graf/img2.ppm
+Descriptor:                          sift
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/datasets/Mikolajczyk/graf/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/datasets/Mikolajczyk/graf/img2.ppm
 Number of Keypoints for Image 1:     2679
 Number of Valid Projected Keypoints: 2452
 Number of Keypoints for Image 2:     3061
