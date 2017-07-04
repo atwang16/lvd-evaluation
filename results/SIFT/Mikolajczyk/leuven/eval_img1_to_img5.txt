@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/leuven/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/leuven/img5.ppm
+Number of Keypoints for Image 1:     2461
+Number of Valid Projected Keypoints: 2416
+Number of Keypoints for Image 2:     1448
+Number of Matches:                   684
+Number of Correct Matches:           571
+Number of Correspondences:           865
+Match ratio:                         0.283113
+Matching score:                      0.236341
+Precision:                           0.834795
+Recall:                              0.660116

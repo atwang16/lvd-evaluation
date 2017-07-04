@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/boat/img1.pgm
+Image 2:                             ../datasets/Mikolajczyk/boat/img2.pgm
+Number of Keypoints for Image 1:     8849
+Number of Valid Projected Keypoints: 8786
+Number of Keypoints for Image 2:     8548
+Number of Matches:                   2564
+Number of Correct Matches:           2405
+Number of Correspondences:           4784
+Match ratio:                         0.291828
+Matching score:                      0.273731
+Precision:                           0.937988
+Recall:                              0.502717

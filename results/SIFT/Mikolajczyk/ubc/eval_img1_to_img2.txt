@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/ubc/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/ubc/img2.ppm
+Number of Keypoints for Image 1:     5570
+Number of Valid Projected Keypoints: 5570
+Number of Keypoints for Image 2:     6493
+Number of Matches:                   3185
+Number of Correct Matches:           3094
+Number of Correspondences:           3885
+Match ratio:                         0.571813
+Matching score:                      0.555476
+Precision:                           0.971429
+Recall:                              0.796396

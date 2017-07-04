@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/bark/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/bark/img6.ppm
+Number of Keypoints for Image 1:     3703
+Number of Valid Projected Keypoints: 3703
+Number of Keypoints for Image 2:     4626
+Number of Matches:                   293
+Number of Correct Matches:           253
+Number of Correspondences:           1096
+Match ratio:                         0.079125
+Matching score:                      0.068323
+Precision:                           0.863481
+Recall:                              0.230839

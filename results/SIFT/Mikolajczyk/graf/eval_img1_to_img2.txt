@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/graf/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/graf/img2.ppm
+Number of Keypoints for Image 1:     2679
+Number of Valid Projected Keypoints: 2452
+Number of Keypoints for Image 2:     3061
+Number of Matches:                   1180
+Number of Correct Matches:           968
+Number of Correspondences:           1318
+Match ratio:                         0.48124
+Matching score:                      0.39478
+Precision:                           0.820339
+Recall:                              0.734446

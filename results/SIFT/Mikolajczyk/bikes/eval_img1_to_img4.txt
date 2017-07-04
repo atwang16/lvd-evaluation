@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/bikes/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/bikes/img4.ppm
+Number of Keypoints for Image 1:     3384
+Number of Valid Projected Keypoints: 3067
+Number of Keypoints for Image 2:     734
+Number of Matches:                   474
+Number of Correct Matches:           309
+Number of Correspondences:           511
+Match ratio:                         0.154548
+Matching score:                      0.10075
+Precision:                           0.651899
+Recall:                              0.604697

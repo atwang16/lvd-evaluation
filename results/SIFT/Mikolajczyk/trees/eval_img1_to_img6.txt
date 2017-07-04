@@ -1,0 +1,13 @@
+Descriptor:                          SIFT
+Image 1:                             ../datasets/Mikolajczyk/trees/img1.ppm
+Image 2:                             ../datasets/Mikolajczyk/trees/img6.ppm
+Number of Keypoints for Image 1:     13269
+Number of Valid Projected Keypoints: 12607
+Number of Keypoints for Image 2:     2923
+Number of Matches:                   286
+Number of Correct Matches:           86
+Number of Correspondences:           1351
+Match ratio:                         0.0226858
+Matching score:                      0.00682161
+Precision:                           0.300699
+Recall:                              0.0636566

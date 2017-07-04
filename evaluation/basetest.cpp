@@ -11,11 +11,16 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #define FIR_NEAR 0
 #define SEC_NEAR 1
-#define DIST_RATIO_THRESH 0.8
+#define DIST_RATIO_THRESH 0.8f
 #define KP_DIST_THRESH 2.5f
+//#define DEBUG
+#define LIMIT_CORRECT_DISPLAYED
+#define NUMBER_KP_TO_DISPLAY 50
 
 using namespace std;
 using namespace cv;
@@ -27,26 +32,33 @@ bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string dist_metric, desc_name;
+	string dist_metric, desc_name, results = "", img_1_name, img_2_name;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
-	bool draw_matches;
 
+#ifdef DEBUG
 	cout << "Starting execution.\n";
-	if(argc < 11) {
-		cout << "Usage ./basetest desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric display_matches\n";
+#endif
+	if(argc < 10) {
+		cout << "Usage ./basetest desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [results]\n";
 		return -1;
-	}
-	else {
-		cout << "Output received.\n";
 	}
 
 	desc_name = argv[1];
 	img_1 = imread(argv[2], CV_LOAD_IMAGE_COLOR);
+	std::vector<std::string> img_1_path_split;
+	boost::split(img_1_path_split, argv[2], boost::is_any_of("/,."));
+	img_1_name = img_1_path_split[img_1_path_split.size()-2];
+#ifdef DEBUG
 	cout << "Read image 1.\n";
+#endif
 	desc_1 = parse_file(argv[3], ',');
+#ifdef DEBUG
 	cout << "Parsed descriptor 1.\n";
+#endif
 	kp_mat_1 = parse_file(argv[4], ',');
-	cout << "Parsed keypoints 1.\n";
+#ifdef DEBUG
+	cout << "Parsed " << kp_mat_1.rows << " keypoints for image 1.\n";
+#endif
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp_1 = KeyPoint();
 		kp_1.pt.x = kp_mat_1.at<float>(i, 0);
@@ -58,11 +70,20 @@ int main(int argc, char *argv[]) {
 		kp_vec_1.push_back(kp_1);
 	}
 	img_2 = imread(argv[5], CV_LOAD_IMAGE_COLOR);
+	std::vector<std::string> img_2_path_split;
+	boost::split(img_2_path_split, argv[5], boost::is_any_of("/,."));
+	img_2_name = img_2_path_split[img_2_path_split.size()-2];
+#ifdef DEBUG
 	cout << "Read image 2.\n";
+#endif
 	desc_2 = parse_file(argv[6], ',');
+#ifdef DEBUG
 	cout << "Parsed descriptor 2.\n";
+#endif
 	kp_mat_2 = parse_file(argv[7], ',');
-	cout << "Parsed keypoints 2.\n";
+#ifdef DEBUG
+	cout << "Parsed " << kp_mat_2.rows << " keypoints for image 2.\n";
+#endif
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp_2 = KeyPoint();
 		kp_2.pt.x = kp_mat_2.at<float>(i, 0);
@@ -75,76 +96,144 @@ int main(int argc, char *argv[]) {
 	}
 	homography = parse_file(argv[8], ' ');
 	dist_metric = argv[9];
-	draw_matches = (argv[10][0] == '1');
+	if(argc == 11) {
+		results = argv[10];
+	}
 
+#ifdef DEBUG
 	cout << "Processed input.\n";
+#endif
+
 
 	// Match descriptors from 1 to 2 using nearest neighbor
 	Ptr< BFMatcher > matcher = BFMatcher::create(get_dist_metric(dist_metric));
 	vector< vector<DMatch> > matches;
 	matcher->knnMatch(desc_1, desc_2, matches, 2);
 
+#ifdef DEBUG
 	cout << "Matched descriptors.\n";
+#endif
 
 	// Use the distance ratio to determine whether it is a "good" match
 	vector<DMatch> good_matches;
 	for(int i = 0; i < matches.size(); i++) {
 		if(matches[i][FIR_NEAR].distance < DIST_RATIO_THRESH * matches[i][SEC_NEAR].distance) {
-			good_matches.push_back(matches[i][FIR_NEAR]); // we only need to save the first match
+//		if(1) {
+			good_matches.push_back(matches[i][FIR_NEAR]); // save the first match
 		}
 	}
 
-	cout << "Good matches determined.\n";
+#ifdef DEBUG
+	cout << good_matches.size() << " good matches determined.\n";
+#endif
+
+	// Generate all projected keypoints
+	vector< KeyPoint > kp_inbound;
+	for(int i = 0; i < kp_vec_1.size(); i++) {
+		KeyPoint kp = kp_vec_1[i];
+		Mat hom_coord_vec = Mat::ones(3, 1, CV_32FC1);
+		hom_coord_vec.at<float>(0) = kp.pt.x;
+		hom_coord_vec.at<float>(1) = kp.pt.y;
+		Mat proj_kp_1_2 =  homography * hom_coord_vec;
+		proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
+
+		// check within bounds
+		if(proj_kp_1_2.at<float>(0) >= 0 && proj_kp_1_2.at<float>(0) < img_2.cols && proj_kp_1_2.at<float>(1) >= 0
+				&& proj_kp_1_2.at<float>(1) < img_2.rows) {
+//			kp_inbound.push_back(KeyPoint(proj_kp_1_2.at<float>(0), proj_kp_1_2.at<float>(1), kp.size, kp.angle, kp.response, kp.octave));
+			kp_inbound.push_back(kp);
+		}
+	}
+
+#ifdef DEBUG
+	cout << "Found " << kp_inbound.size() << " keypoints for image 1 after removing ones that projected outside.\n";
+#endif
 
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;
-	vector<KeyPoint> matched_kp_1, matched_kp_2;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i].queryIdx;
 		int kp_id_2 = good_matches[i].trainIdx;
 		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, KP_DIST_THRESH)) {
 			correct_matches.push_back(good_matches[i]);
-			matched_kp_1.push_back(kp_vec_1[kp_id_1]);
-			matched_kp_2.push_back(kp_vec_2[kp_id_2]);
 		}
 	}
 
-	cout << "Evaluated matches using ground truths.\n";
+#ifdef DEBUG
+	cout << correct_matches.size() << " correct matches found.\n";
+#endif
 
 	// Count total number of correspondences
 	int num_correspondences = 0;
-	for(int i = 0; i < kp_vec_1.size(); i++) {
+	for(int i = 0; i < kp_inbound.size(); i++) {
 		for(int j = 0; j < kp_vec_2.size(); j++) {
-			if(is_overlapping(kp_vec_1[i], kp_vec_2[j], homography, KP_DIST_THRESH)) {
+			if(is_overlapping(kp_inbound[i], kp_vec_2[j], homography, KP_DIST_THRESH)) {
 				num_correspondences++;
 				break;
 			}
 		}
 	}
 
+#ifdef DEBUG
+	cout << num_correspondences << " correct correspondences among the given keypoints.\n\n";
+#endif
+
 	// Use data from last step to build metrics
-	float match_ratio = good_matches.size() / desc_1.rows;   // Since we are not cross checking, each descriptor in image 1 is
-															 // matched to one in image 2, thus we count the number of features
-															 // detected as the number of descriptors found for image 1.
-	float precision = correct_matches.size() / good_matches.size();
+	float match_ratio = (float)good_matches.size() / kp_inbound.size();
+	float precision = (float)correct_matches.size() / good_matches.size();
 	float matching_score = match_ratio * precision;
-	float recall = correct_matches.size() / num_correspondences;
+	float recall = (float)correct_matches.size() / num_correspondences;
 
-	// TODO: make it export to file instead of printing only to console
 	// Export metrics
-	cout << desc_name << " descriptor results:\n";
-	cout << "-----------------------\n";
-	cout << "Match ratio: " << match_ratio << "\n";
-	cout << "Matching score: " << matching_score << "\n";
-	cout << "Precision: " << precision << "\n";
-	cout << "Recall: " << recall << "\n";
+	if(results == "") {
+		cout << desc_name << " descriptor results:\n";
+		cout << "-----------------------\n";
+		cout << "Match ratio: " << match_ratio << "\n";
+		cout << "Matching score: " << matching_score << "\n";
+		cout << "Precision: " << precision << "\n";
+		cout << "Recall: " << recall << "\n";
+	}
+	else {
+		ofstream f;
+		f.open(results + "eval_" + img_1_name + "_to_" + img_2_name + ".txt");
+		f << "Descriptor:                          " << desc_name              << "\n";
+		f << "Image 1:                             " << argv[2]                << "\n";
+		f << "Image 2:                             " << argv[5]                << "\n";
+		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
+		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
+		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
+		f << "Number of Matches:                   " << good_matches.size()    << "\n";
+		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";
+		f << "Number of Correspondences:           " << num_correspondences    << "\n";
+		f << "Match ratio:                         " << match_ratio            << "\n";
+		f << "Matching score:                      " << matching_score         << "\n";
+		f << "Precision:                           " << precision              << "\n";
+		f << "Recall:                              " << recall                 << "\n";
+		f.close();
+	}
 
-	// TODO: Export image to file
+
+#ifdef LIMIT_CORRECT_DISPLAYED
+	vector< DMatch >::const_iterator first = correct_matches.begin();
+	vector< DMatch >::const_iterator last;
+	if(correct_matches.size() > NUMBER_KP_TO_DISPLAY) {
+		last = correct_matches.begin() + NUMBER_KP_TO_DISPLAY;
+	}
+	else {
+		last = correct_matches.end();
+	}
+	vector< DMatch > display_matches(first, last);
+
+#else
+	vector< DMatch > display_matches = correct_matches;
+#endif
+
 	// Draw matches
-	if(draw_matches) {
+	if(results != "") {
 		Mat res;
-		drawMatches(img_1, matched_kp_1, img_2, matched_kp_2, correct_matches, res);
-//		imwrite("../../samples/data/latch_res.png", res);
+		drawMatches(img_1, kp_vec_1, img_2, kp_vec_2, display_matches, res, Scalar::all(-1), Scalar::all(-1),
+				vector< char >(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+		imwrite(results + "res_" + img_1_name + "_to_" + img_2_name + ".png", res);
 	}
 
 	return 0;
@@ -158,17 +247,19 @@ Mat parse_file(string fname, char delimiter) { // TODO: modify to adjust for typ
 	// TODO: Check for empty lines and skip over them
 	// read each line
 	while(getline(inputfile, current_line)) {
-		vector<float> values;
-		stringstream str_stream(current_line);
-		string single_value;
+		if(current_line != "") {
+			vector<float> values;
+			stringstream str_stream(current_line);
+			string single_value;
 
-		// Read each value with delimiter
-		while(getline(str_stream,single_value, delimiter)) {
-			if(single_value != "") {
-				values.push_back(atof(single_value.c_str()));
+			// Read each value with delimiter
+			while(getline(str_stream,single_value, delimiter)) {
+				if(single_value != "") {
+					values.push_back(atof(single_value.c_str()));
+				}
 			}
+			all_data.push_back(values);
 		}
-		all_data.push_back(values);
 	}
 
 	// Place data in OpenCV matrix
@@ -203,12 +294,11 @@ int get_dist_metric(string metric) {
 
 bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold) {
 	Mat hom_coord_vec = Mat::ones(3, 1, CV_32FC1);
-	hom_coord_vec.at<float>(0, 0) = kp_1.pt.x;
-	hom_coord_vec.at<float>(1, 0) = kp_1.pt.y;
-	cout << hom_coord_vec.depth() << " " << hom_coord_vec.channels() << "\n";
-	cout << hom.depth() << " " << hom.channels() << "\n";
+	hom_coord_vec.at<float>(0) = kp_1.pt.x;
+	hom_coord_vec.at<float>(1) = kp_1.pt.y;
 	Mat proj_kp_1_2 =  hom * hom_coord_vec;
-	float dist = sqrt(pow(kp_1.pt.x - proj_kp_1_2.at<float>(0, 0), 2) + pow(kp_1.pt.y - proj_kp_1_2.at<float>(1, 0), 2));
+	proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
+	float dist = sqrt(pow(kp_2.pt.x - proj_kp_1_2.at<float>(0), 2) + pow(kp_2.pt.y - proj_kp_1_2.at<float>(1), 2));
 	return dist < threshold;
 }
 
