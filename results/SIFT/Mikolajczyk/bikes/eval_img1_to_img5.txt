@@ -1,13 +1,22 @@
-Descriptor:                          SIFT
-Image 1:                             ../datasets/Mikolajczyk/bikes/img1.ppm
-Image 2:                             ../datasets/Mikolajczyk/bikes/img5.ppm
+Descriptor:                          sift
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bikes/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bikes/img5.ppm
+Descriptor Size:                     96
+
 Number of Keypoints for Image 1:     3384
-Number of Valid Projected Keypoints: 3077
 Number of Keypoints for Image 2:     510
 Number of Matches:                   469
 Number of Correct Matches:           227
 Number of Correspondences:           345
-Match ratio:                         0.152421
-Matching score:                      0.0737732
+
+Minimum Correct Distance:            22.6053
+Average Correct Distance:            118.047
+Maximum Correct Distance:            302.225
+Minimum Incorrect Distance:          79.019
+Average Incorrect Distance:          220.256
+Maximum Incorrect Distance:          333.994
+
+Match ratio:                         0.138593
+Matching score:                      0.0670804
 Precision:                           0.484009
 Recall:                              0.657971

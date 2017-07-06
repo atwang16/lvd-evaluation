@@ -23,8 +23,10 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <chrono>
 
 using namespace boost::filesystem;
+using namespace std::chrono;
 
 #define DEFAULT_OUTPUT_DIR "results/"
 
@@ -36,23 +38,65 @@ using namespace boost::filesystem;
 #include "opencv2/xfeatures2d.hpp"
 
 // Compile-time Constants
-#define DESCRIPTOR "SIFT"    // name of descriptor
+#define DESCRIPTOR "sift"    // name of descriptor
+#define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
+#define PATH_TO_DESCRIPTORS_FOLDER "/Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/descriptors/"
 
-void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) {
-	// default parameters
-	int nfeatures = 0;
+void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, long* kp_time, long* desc_time, long* total_time) {
+	// Parameters to load from file
+	ifstream params(PATH_TO_DESCRIPTORS_FOLDER DESCRIPTOR "_parameters.txt");
+	std::string line, var, value;
+	std::vector<std::string> line_split;
+
+	// parameters with default values
+	int nfeatures = 0; // 0 for SIFT implies no upper bound
 	int nOctaveLayers = 3;
 	double contrastThreshold = 0.04;
 	double edgeThreshold = 10;
 	double sigma = 1.6;
 
+	// Load parameters from file
+	while(getline(params, line)) {
+		boost::split(line_split, line, boost::is_any_of("="));
+		var = line_split[0];
+		value = line_split.back();
+
+		if(var == "nfeatures") {
+			nfeatures = stoi(value);
+		}
+		else if(var == "nOctaveLayers") {
+			nOctaveLayers = stoi(value);
+		}
+		else if(var == "contrastThreshold") {
+			contrastThreshold = stod(value);
+		}
+		else if(var == "edgeThreshold") {
+			edgeThreshold = stod(value);
+		}
+		else if(var == "sigma") {
+			sigma = stod(value);
+		}
+	}
+
+	// Initialization
 	cv::Ptr<cv::Feature2D> f2d = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
 
+	high_resolution_clock::time_point start = high_resolution_clock::now();
+
 	// detect keypoints
-	f2d->detect(image, keypoints);
+	f2d->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
+
+	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 
 	// extract descriptors
-	f2d->compute(image, keypoints, descriptors);
+	f2d->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
+
+	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
+
+	int num_keypoints = keypoints.size();
+	*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
+	*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+	*total_time += duration_cast<milliseconds>(desc_done - start).count();
 }
 
 /***********************
@@ -121,11 +165,14 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	long kp_time = 0, desc_time = 0, total_time = 0;
+	int num_images = 0;
+
 	for(auto const& fname : img_vec) {
 		std::cout << "Extracting descriptors for " << fname << "\n";
 
 		// Read the image
-		cv::Mat img = cv::imread(fname, CV_LOAD_IMAGE_COLOR);
+		cv::Mat img = cv::imread(fname, IMG_READ_COLOR);
 
 		std::string dt_fname_desc, dt_fname_key;
 
@@ -146,7 +193,7 @@ int main(int argc, char *argv[]) {
 		// Compute descriptors
 		cv::Mat descriptors;
 		std::vector<cv::KeyPoint> keypoints;
-		detectAndCompute(img, keypoints, descriptors);
+		detectAndCompute(img, keypoints, descriptors, &kp_time, &desc_time, &total_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
@@ -160,15 +207,29 @@ int main(int argc, char *argv[]) {
 			f_key << keypoints[i].octave   << std::endl;
 		}
 		f_key.close();
-		std::cout << "Extraction complete. Keypoints stored at " << dt_fname_key << "\n";
+		std::cout << "Keypoints stored at " << dt_fname_key << "\n";
 
 		// Open the descriptor file for saving
 		std::ofstream f_desc;
 		f_desc.open(dt_fname_desc);
 		f_desc << cv::format(descriptors, cv::Formatter::FMT_CSV) << std::endl;
 		f_desc.close();
-		std::cout << "Extraction complete. Descriptors stored at " << dt_fname_desc << "\n";
+		std::cout << "Descriptors stored at " << dt_fname_desc << "\n" << "\n";
+
+		num_images++;
 	}
+
+	kp_time /= num_images;
+	desc_time /= num_images;
+	total_time /= num_images;
+
+	ofstream f;
+	f.open(output_directory + descr_name + "/" + main_dir + "time.txt");
+	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " microseconds" << "\n";
+	f << "Average time to extract descriptors, per keypoint: " << desc_time << " microseconds" << "\n";
+	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
+	f.close();
+
 	return 0;
 }
 

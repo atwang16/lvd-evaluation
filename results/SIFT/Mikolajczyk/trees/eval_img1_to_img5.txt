@@ -1,13 +1,22 @@
-Descriptor:                          SIFT
-Image 1:                             ../datasets/Mikolajczyk/trees/img1.ppm
-Image 2:                             ../datasets/Mikolajczyk/trees/img5.ppm
+Descriptor:                          sift
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/trees/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/trees/img5.ppm
+Descriptor Size:                     96
+
 Number of Keypoints for Image 1:     13269
-Number of Valid Projected Keypoints: 12784
 Number of Keypoints for Image 2:     5048
 Number of Matches:                   434
 Number of Correct Matches:           212
 Number of Correspondences:           2462
-Match ratio:                         0.0339487
-Matching score:                      0.0165832
+
+Minimum Correct Distance:            75.0333
+Average Correct Distance:            188.788
+Maximum Correct Distance:            269.59
+Minimum Incorrect Distance:          57.6368
+Average Incorrect Distance:          201.308
+Maximum Incorrect Distance:          291.44
+
+Match ratio:                         0.0327078
+Matching score:                      0.0159771
 Precision:                           0.488479
 Recall:                              0.0861089

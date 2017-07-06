@@ -1,13 +1,22 @@
-Descriptor:                          SIFT
-Image 1:                             ../datasets/Mikolajczyk/boat/img1.pgm
-Image 2:                             ../datasets/Mikolajczyk/boat/img2.pgm
+Descriptor:                          sift
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/boat/img1.pgm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/boat/img2.pgm
+Descriptor Size:                     96
+
 Number of Keypoints for Image 1:     8849
-Number of Valid Projected Keypoints: 8786
 Number of Keypoints for Image 2:     8548
 Number of Matches:                   2564
 Number of Correct Matches:           2405
 Number of Correspondences:           4784
-Match ratio:                         0.291828
-Matching score:                      0.273731
+
+Minimum Correct Distance:            21.9089
+Average Correct Distance:            131.944
+Maximum Correct Distance:            286.246
+Minimum Incorrect Distance:          52.0384
+Average Incorrect Distance:          175.735
+Maximum Incorrect Distance:          310.524
+
+Match ratio:                         0.28975
+Matching score:                      0.271782
 Precision:                           0.937988
 Recall:                              0.502717

@@ -1,0 +1,12 @@
+Descriptor:                          akaze
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img6.ppm
+Number of Keypoints for Image 1:     1053
+Number of Keypoints for Image 2:     1332
+Number of Matches:                   28
+Number of Correct Matches:           10
+Number of Correspondences:           181
+Match ratio:                         0.0265907
+Matching score:                      0.00949668
+Precision:                           0.357143
+Recall:                              0.0552486

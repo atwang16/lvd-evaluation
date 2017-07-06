@@ -1,13 +1,22 @@
-Descriptor:                          SIFT
-Image 1:                             ../datasets/Mikolajczyk/wall/img1.ppm
-Image 2:                             ../datasets/Mikolajczyk/wall/img4.ppm
+Descriptor:                          sift
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/wall/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/wall/img4.ppm
+Descriptor Size:                     96
+
 Number of Keypoints for Image 1:     10357
-Number of Valid Projected Keypoints: 9174
 Number of Keypoints for Image 2:     10635
 Number of Matches:                   2312
 Number of Correct Matches:           1910
 Number of Correspondences:           5040
-Match ratio:                         0.252017
-Matching score:                      0.208197
+
+Minimum Correct Distance:            77.4338
+Average Correct Distance:            183.023
+Maximum Correct Distance:            286.803
+Minimum Incorrect Distance:          78.8543
+Average Incorrect Distance:          176.073
+Maximum Incorrect Distance:          281.668
+
+Match ratio:                         0.223231
+Matching score:                      0.184416
 Precision:                           0.826125
 Recall:                              0.378968

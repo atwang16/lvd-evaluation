@@ -1,14 +1,17 @@
 import subprocess
 import sys
 import os.path
+import os
 
-root_folder = ".."
+root_folder = os.path.join(os.getcwd(), "..")
 results_folder = "results"
 image_folder = "datasets"
 results_dir = os.path.join(root_folder, results_folder)
 image_dir = os.path.join(root_folder, image_folder)
 BASE_TEST_PATH_DIR = os.path.join(root_folder, "basetest", "basetest")
 PARAMETERS_FILE_PATH = os.path.join(root_folder, "evaluation", "parameters.txt")
+DESCRIPTOR_PARAMETERS_DIR = os.path.join(root_folder, "descriptors")
+distance = "L2"
 
 def generate_results(path_addendum):
     img_num = 2
@@ -52,10 +55,9 @@ def generate_results(path_addendum):
         kp2_path = os.path.join(results_sf_path, current_kp)
         hom_path = os.path.join(image_sf_path, homographies[img_num - 1]) # assuming there is an identity homography
         results_path = os.path.join(results_dir, path_addendum + os.sep)
-        norm = "L2" # fix this later
 
         args = [BASE_TEST_PATH_DIR, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
-                kp2_path, hom_path, norm, results_path]
+                kp2_path, hom_path, distance, results_path]
 
         print(desc_name + ": " + database + " - " + path_addendum + ": " + images[0] + " to " + current_img)
         subprocess.run(args)
@@ -68,6 +70,18 @@ else:
     database = sys.argv[2]
     image_dir = os.path.join(image_dir, database)
     results_dir = os.path.join(results_dir, desc_name, database)
+
+    with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split("=")
+            var = line_split[0]
+            value = line_split[-1]
+            if(value[-1] == "\n"):
+                value = value[:-1]
+            if var == "distance":
+                distance = value
+            line = f.readline()
 
     subfolders = os.listdir(results_dir)
 

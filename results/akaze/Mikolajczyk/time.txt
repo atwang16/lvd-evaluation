@@ -1,0 +1,3 @@
+Average time to detect keypoints, per keypoint:    91 microseconds
+Average time to extract descriptors, per keypoint: 48 microseconds
+Average time per image:                            326 milliseconds

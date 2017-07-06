@@ -1,0 +1,12 @@
+Descriptor:                          latch
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img2.ppm
+Number of Keypoints for Image 1:     8167
+Number of Keypoints for Image 2:     7882
+Number of Matches:                   196
+Number of Correct Matches:           160
+Number of Correspondences:           4723
+Match ratio:                         0.023999
+Matching score:                      0.019591
+Precision:                           0.816327
+Recall:                              0.0338768
