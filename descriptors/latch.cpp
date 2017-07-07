@@ -61,19 +61,13 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 		}
 	}
 
+	// Extract keypoints and compute descriptors
 	cv::Ptr<cv::ORB> orb_detector = cv::ORB::create(nfeatures);
 	cv::Ptr<cv::xfeatures2d::LATCH> latch = cv::xfeatures2d::LATCH::create();
-
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-
-	// detect keypoints
 	orb_detector->detect(image, keypoints);
-
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-
-	// extract descriptors
 	latch->compute(image, keypoints, descriptors);
-
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();
@@ -207,20 +201,20 @@ int main(int argc, char *argv[]) {
 	total_time /= num_images;
 
 	ofstream f;
-		f.open(output_directory + descr_name + "/" + main_dir + "time.txt");
-		f << "Average time to detect keypoints, per keypoint:    " << kp_time << " nanoseconds" << "\n";
-		f << "Average time to extract descriptors, per keypoint: " << desc_time << " nanoseconds" << "\n";
-		f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
-		f.close();
+	f.open(output_directory + descr_name + "/" + main_dir + "time.txt");
+	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " nanoseconds" << "\n";
+	f << "Average time to extract descriptors, per keypoint: " << desc_time << " nanoseconds" << "\n";
+	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
+	f.close();
 
-		return 0;
-	}
+	return 0;
+}
 
-	bool is_image(std::string fname) {
-		std::string ext = boost::filesystem::extension(fname);
-		return(ext == ".png" || ext == ".jpg" || ext == ".ppm" || ext == ".pgm");
-	}
+bool is_image(std::string fname) {
+	std::string ext = boost::filesystem::extension(fname);
+	return(ext == ".png" || ext == ".jpg" || ext == ".ppm" || ext == ".pgm");
+}
 
-	bool is_hidden_file(std::string fname) {
-	    return(fname[0] == '.');
-	}
+bool is_hidden_file(std::string fname) {
+	return(fname[0] == '.');
+}

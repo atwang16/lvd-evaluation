@@ -78,19 +78,12 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 		}
 	}
 
-	// Initialization
-	cv::Ptr<cv::Feature2D> f2d = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
-
+	// Extract keypoints and compute descriptors
+	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-
-	// detect keypoints
-	f2d->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
-
+	sift->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-
-	// extract descriptors
-	f2d->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
-
+	sift->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();

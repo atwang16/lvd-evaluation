@@ -29,13 +29,13 @@ bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string dist_metric, desc_name, results = "", img_1_name, img_2_name;
+	string dist_metric, desc_name, results = "", img_1_name;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
-	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
+	float dist_ratio_thresh = 0.8f;
 	int nb_kp_to_display = 50, cap_correct_displayed = 1, verbose = 0;
 
-	if(argc < 11) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [results]\n";
+	if(argc < 7) {
+		cout << "Usage ./imageretrieval parameters_file desc_name query_imgs query_descs img_database desc_database [results]\n";
 		return -1;
 	}
 
@@ -196,18 +196,39 @@ int main(int argc, char *argv[]) {
 //		cout << "Found " << kp_inbound.size() << " keypoints for image 1 after removing ones that projected outside.\n";
 //	}
 
+	float min_correct_dist = -1, ave_correct_dist = 0, max_correct_dist = -1;
+	float min_incorrect_dist = -1, ave_incorrect_dist = 0, max_incorrect_dist = -1;
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i].queryIdx;
 		int kp_id_2 = good_matches[i].trainIdx;
+		float dist = good_matches[i].distance;
 		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
 			correct_matches.push_back(good_matches[i]);
+			ave_correct_dist += dist;
+			if(min_correct_dist == -1 || min_correct_dist > dist) {
+				min_correct_dist = dist;
+			}
+			if(max_correct_dist == -1 || max_correct_dist < dist) {
+				max_correct_dist = dist;
+			}
 #ifdef DEBUG
 			is_good_match[good_matches[i].queryIdx] = "correct";
 #endif
 		}
+		else {
+			ave_incorrect_dist += dist;
+			if(min_incorrect_dist == -1 || min_incorrect_dist > dist) {
+				min_incorrect_dist = dist;
+			}
+			if(max_incorrect_dist == -1 || max_incorrect_dist < dist) {
+				max_incorrect_dist = dist;
+			}
+		}
 	}
+	ave_correct_dist /= correct_matches.size();
+	ave_incorrect_dist /= (good_matches.size() - correct_matches.size());
 
 	if(verbose) {
 		cout << correct_matches.size() << " correct matches found.\n";
@@ -302,6 +323,13 @@ int main(int argc, char *argv[]) {
 		f << "Number of Matches:                   " << good_matches.size()    << "\n";
 		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";
 		f << "Number of Correspondences:           " << num_correspondences    << "\n";
+		f                                                                      << "\n";
+		f << "Minimum Correct Distance:            " << min_correct_dist       << "\n";
+		f << "Average Correct Distance:            " << ave_correct_dist       << "\n";
+		f << "Maximum Correct Distance:            " << max_correct_dist       << "\n";
+		f << "Minimum Incorrect Distance:          " << min_incorrect_dist     << "\n";
+		f << "Average Incorrect Distance:          " << ave_incorrect_dist     << "\n";
+		f << "Maximum Incorrect Distance:          " << max_incorrect_dist     << "\n";
 		f                                                                      << "\n";
 		f << "Match ratio:                         " << match_ratio            << "\n";
 		f << "Matching score:                      " << matching_score         << "\n";

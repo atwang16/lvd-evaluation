@@ -81,19 +81,12 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 		}
 	}
 
-	// Initialization
+	// Extract keypoints and compute descriptors
 	cv::Ptr<cv::Feature2D> akaze = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
-
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-
-	// detect keypoints
 	akaze->detect(image, keypoints, cv::noArray());
-
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-
-	// extract descriptors
 	akaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, false); // bug seems to make separate detection and extraction not work
-
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();
