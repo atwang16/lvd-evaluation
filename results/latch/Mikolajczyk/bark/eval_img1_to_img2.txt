@@ -1,12 +1,24 @@
 Descriptor:                          latch
 Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img1.ppm
 Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img2.ppm
+Descriptor Size (bytes):             32
+
 Number of Keypoints for Image 1:     8167
 Number of Keypoints for Image 2:     7882
 Number of Matches:                   196
 Number of Correct Matches:           160
 Number of Correspondences:           4723
+
+Minimum Correct Distance:            41
+Average Correct Distance:            59.5125
+Maximum Correct Distance:            74
+Minimum Incorrect Distance:          44
+Average Incorrect Distance:          61.25
+Maximum Incorrect Distance:          70
+
 Match ratio:                         0.023999
 Matching score:                      0.019591
 Precision:                           0.816327
 Recall:                              0.0338768
+Matching time (ms):                  146
+Matching time per keypoint (mus):    17

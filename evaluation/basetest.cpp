@@ -14,11 +14,13 @@
 #include <cmath>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <chrono>
 
 //#define DEBUG
 
 using namespace std;
 using namespace cv;
+using namespace std::chrono;
 
 Mat parse_file(string fname, char delimiter, int type);
 int get_dist_metric(string metric);
@@ -132,9 +134,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Match descriptors from 1 to 2 using nearest neighbor ratio
+	high_resolution_clock::time_point start = high_resolution_clock::now();
 	Ptr< BFMatcher > matcher = BFMatcher::create(get_dist_metric(dist_metric)); // no cross check
 	vector< vector<DMatch> > nn_matches;
 	matcher->knnMatch(desc_1, desc_2, nn_matches, 2);
+	high_resolution_clock::time_point end = high_resolution_clock::now();
+	long match_time = duration_cast<milliseconds>(end - start).count();
+	long match_time_per_kp = duration_cast<microseconds>(end - start).count() / kp_vec_1.size();
 
 	if(verbose) {
 		cout << "Matched descriptors.\n";
@@ -292,7 +298,7 @@ int main(int argc, char *argv[]) {
 	float precision = (float)correct_matches.size() / good_matches.size();
 	float matching_score = match_ratio * precision;
 	float recall = (float)correct_matches.size() / num_correspondences;
-	int descriptor_size = sizeof(desc_1.row(0));
+	int descriptor_size = desc_1.cols * desc_1.elemSize1();
 
 	// Export metrics
 	if(results == "") { // no directory specified for exporting results; print to console
@@ -309,7 +315,7 @@ int main(int argc, char *argv[]) {
 		f << "Descriptor:                          " << desc_name              << "\n";
 		f << "Image 1:                             " << argv[3]                << "\n";
 		f << "Image 2:                             " << argv[6]                << "\n";
-		f << "Descriptor Size:                     " << descriptor_size        << "\n";
+		f << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
 		f                                                                      << "\n";
 		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
 //		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
@@ -329,6 +335,8 @@ int main(int argc, char *argv[]) {
 		f << "Matching score:                      " << matching_score         << "\n";
 		f << "Precision:                           " << precision              << "\n";
 		f << "Recall:                              " << recall                 << "\n";
+		f << "Matching time (ms):                  " << match_time             << "\n";
+		f << "Matching time per keypoint (mus):    " << match_time_per_kp      << "\n";
 		f.close();
 	}
 

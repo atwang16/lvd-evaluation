@@ -33,9 +33,6 @@ using namespace std::chrono;
  * MODIFY FOR EACH DESCRIPTOR *
  ******************************/
 
-// Libraries
-#include "opencv2/xfeatures2d.hpp"
-
 // Compile-time Constants
 #define DESCRIPTOR "akaze"    // name of descriptor
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
@@ -85,18 +82,17 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 	}
 
 	// Initialization
-	cv::Ptr<cv::Feature2D> det = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
-	cv::Ptr<cv::Feature2D> ext = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
+	cv::Ptr<cv::Feature2D> akaze = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
 
 	high_resolution_clock::time_point start = high_resolution_clock::now();
 
 	// detect keypoints
-	det->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
+	akaze->detect(image, keypoints, cv::noArray());
 
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 
 	// extract descriptors
-	ext->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
+	akaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, false); // bug seems to make separate detection and extraction not work
 
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 

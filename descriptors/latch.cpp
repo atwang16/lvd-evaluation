@@ -23,8 +23,10 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <chrono>
 
 using namespace boost::filesystem;
+using namespace std::chrono;
 
 #define DEFAULT_OUTPUT_DIR "results/"
 
@@ -40,7 +42,7 @@ using namespace boost::filesystem;
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 #define PATH_TO_DESCRIPTORS_FOLDER "/Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/descriptors/"
 
-void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) {
+void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, long* kp_time, long* desc_time, long* total_time) {
 	// Parameters to load from file
 	ifstream params(PATH_TO_DESCRIPTORS_FOLDER DESCRIPTOR "_parameters.txt");
 	std::string line, var, value;
@@ -62,11 +64,22 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 	cv::Ptr<cv::ORB> orb_detector = cv::ORB::create(nfeatures);
 	cv::Ptr<cv::xfeatures2d::LATCH> latch = cv::xfeatures2d::LATCH::create();
 
+	high_resolution_clock::time_point start = high_resolution_clock::now();
+
 	// detect keypoints
 	orb_detector->detect(image, keypoints);
 
+	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
+
 	// extract descriptors
 	latch->compute(image, keypoints, descriptors);
+
+	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
+
+	int num_keypoints = keypoints.size();
+	*kp_time += duration_cast<nanoseconds>(kp_done - start).count() / num_keypoints;
+	*desc_time += duration_cast<nanoseconds>(desc_done - kp_done).count() / num_keypoints;
+	*total_time += duration_cast<milliseconds>(desc_done - start).count();
 }
 
 /***********************
@@ -135,6 +148,9 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
+	long kp_time = 0, desc_time = 0, total_time = 0;
+	int num_images = 0;
+
 	for(auto const& fname : img_vec) {
 		std::cout << "Extracting descriptors for " << fname << "\n";
 
@@ -160,7 +176,7 @@ int main(int argc, char *argv[]) {
 		// Compute descriptors
 		cv::Mat descriptors;
 		std::vector<cv::KeyPoint> keypoints;
-		detectAndCompute(img, keypoints, descriptors);
+		detectAndCompute(img, keypoints, descriptors, &kp_time, &desc_time, &total_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
@@ -182,15 +198,29 @@ int main(int argc, char *argv[]) {
 		f_desc << cv::format(descriptors, cv::Formatter::FMT_CSV) << std::endl;
 		f_desc.close();
 		std::cout << "Descriptors stored at " << dt_fname_desc << "\n" << "\n";
+
+		num_images++;
 	}
-	return 0;
-}
 
-bool is_image(std::string fname) {
-	std::string ext = boost::filesystem::extension(fname);
-	return(ext == ".png" || ext == ".jpg" || ext == ".ppm" || ext == ".pgm");
-}
+	kp_time /= num_images;
+	desc_time /= num_images;
+	total_time /= num_images;
 
-bool is_hidden_file(std::string fname) {
-    return(fname[0] == '.');
-}
+	ofstream f;
+		f.open(output_directory + descr_name + "/" + main_dir + "time.txt");
+		f << "Average time to detect keypoints, per keypoint:    " << kp_time << " nanoseconds" << "\n";
+		f << "Average time to extract descriptors, per keypoint: " << desc_time << " nanoseconds" << "\n";
+		f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
+		f.close();
+
+		return 0;
+	}
+
+	bool is_image(std::string fname) {
+		std::string ext = boost::filesystem::extension(fname);
+		return(ext == ".png" || ext == ".jpg" || ext == ".ppm" || ext == ".pgm");
+	}
+
+	bool is_hidden_file(std::string fname) {
+	    return(fname[0] == '.');
+	}

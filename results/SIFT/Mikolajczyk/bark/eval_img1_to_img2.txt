@@ -1,7 +1,7 @@
 Descriptor:                          sift
-Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img1.ppm
-Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/evaluation/../datasets/Mikolajczyk/bark/img2.ppm
-Descriptor Size:                     96
+Image 1:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/datasets/Mikolajczyk/bark/img1.ppm
+Image 2:                             /Users/austin/MIT/02_Spring_2017/MISTI_France/lvd-evaluation/datasets/Mikolajczyk/bark/img2.ppm
+Descriptor Size (bytes):             128
 
 Number of Keypoints for Image 1:     3703
 Number of Keypoints for Image 2:     3017
@@ -20,3 +20,5 @@ Match ratio:                         0.174993
 Matching score:                      0.153659
 Precision:                           0.878086
 Recall:                              0.50088
+Matching time (ms):                  274
+Matching time per keypoint (mus):    74
