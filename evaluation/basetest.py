@@ -63,28 +63,31 @@ def generate_results(path_addendum):
         subprocess.run(args)
         img_num += 1
 
-if len(sys.argv) < 3:
-    print("Usage: python basetest.py desc_name database_name")
-else:
-    desc_name = sys.argv[1]
-    database = sys.argv[2]
-    image_dir = os.path.join(image_dir, database)
-    results_dir = os.path.join(results_dir, desc_name, database)
+####### MAIN #######
 
-    with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
-        line = f.readline()
-        while line != "":
-            line_split = line.split("=")
-            var = line_split[0]
-            value = line_split[-1]
-            if(value[-1] == "\n"):
-                value = value[:-1]
-            if var == "distance":
-                distance = value
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python basetest.py desc_name database_name")
+    else:
+        desc_name = sys.argv[1]
+        database = sys.argv[2]
+        image_dir = os.path.join(image_dir, database)
+        results_dir = os.path.join(results_dir, desc_name, database)
+
+        with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
             line = f.readline()
+            while line != "":
+                line_split = line.split("=")
+                var = line_split[0]
+                value = line_split[-1]
+                if(value[-1] == "\n"):
+                    value = value[:-1]
+                if var == "distance":
+                    distance = value
+                line = f.readline()
 
-    subfolders = os.listdir(results_dir)
+        subfolders = os.listdir(results_dir)
 
-    for sf in subfolders:
-        if sf[0] != "." and os.path.isdir(os.path.join(results_dir, sf)): # ignore .DS_STORE-like files
-            generate_results(sf)
+        for sf in subfolders:
+            if sf[0] != "." and os.path.isdir(os.path.join(results_dir, sf)): # ignore .DS_STORE-like files
+                generate_results(sf)

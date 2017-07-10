@@ -75,53 +75,59 @@ def generate_results(path_addendum):
         img_num += 1
         first_time = False
 
+####### MAIN #######
 
-if len(sys.argv) < 3:
-    print("Usage: python basetest.py desc_name database_name")
-else:
-    desc_name = sys.argv[1]
-    database = sys.argv[2]
-    image_dir = os.path.join(image_dir, database)
-    results_dir = os.path.join(results_dir, desc_name)
-    desc_kp_dir = os.path.join(results_dir, database)
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Usage: python distancethresh.py desc_name database_name")
+    else:
+        desc_name = sys.argv[1]
+        database = sys.argv[2]
+        image_dir = os.path.join(image_dir, database)
+        results_dir = os.path.join(results_dir, desc_name)
+        desc_kp_dir = os.path.join(results_dir, database)
 
-    with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
-        line = f.readline()
-        while line != "":
-            line_split = line.split("=")
-            var = line_split[0]
-            value = line_split[-1]
-            if (value[-1] == "\n"):
-                value = value[:-1]
-            if var == "distance":
-                distance = value
+        with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
             line = f.readline()
+            while line != "":
+                line_split = line.split("=")
+                var = line_split[0]
+                value = line_split[-1]
+                if (value[-1] == "\n"):
+                    value = value[:-1]
+                if var == "distance":
+                    distance = value
+                line = f.readline()
 
-    subfolders = os.listdir(desc_kp_dir)
+        subfolders = os.listdir(desc_kp_dir)
 
-    for sf in subfolders:
-        if sf[0] != "." and os.path.isdir(os.path.join(desc_kp_dir, sf)):  # ignore .DS_STORE-like files
-            generate_results(sf)
+        for sf in subfolders:
+            if sf[0] != "." and os.path.isdir(os.path.join(desc_kp_dir, sf)):  # ignore .DS_STORE-like files
+                generate_results(sf)
 
-    with open(os.path.join(results_dir, desc_name + "_corrmatches_distthresh.csv")) as f:
-        corr_match_distances = []
-        line = f.readline()
-        while line != "" and line != "\n":
-            corr_match_distances.append(float(line));
+        with open(os.path.join(results_dir, desc_name + "_corrmatches_distthresh.csv")) as f:
+            corr_match_distances = []
             line = f.readline()
-        plt.hist(corr_match_distances)
+            while line != "" and line != "\n":
+                corr_match_distances.append(float(line));
+                line = f.readline()
+            plt.hist(corr_match_distances)
+            plt.show()
 
-    with open(os.path.join(results_dir, desc_name + "_goodmatches_distthresh.csv")) as f:
-        good_match_distances = []
-        line = f.readline()
-        while line != "" and line != "\n":
-            good_match_distances.append(float(line));
+        with open(os.path.join(results_dir, desc_name + "_goodmatches_distthresh.csv")) as f:
+            good_match_distances = []
             line = f.readline()
-        plt.hist(good_match_distances)
-    with open(os.path.join(results_dir, desc_name + "_badmatches_distthresh.csv")) as f:
-        bad_match_distances = []
-        line = f.readline()
-        while line != "" and line != "\n":
-            bad_match_distances.append(float(line));
+            while line != "" and line != "\n":
+                good_match_distances.append(float(line));
+                line = f.readline()
+            plt.hist(good_match_distances)
+            plt.show()
+
+        with open(os.path.join(results_dir, desc_name + "_badmatches_distthresh.csv")) as f:
+            bad_match_distances = []
             line = f.readline()
-        plt.hist(bad_match_distances)
+            while line != "" and line != "\n":
+                bad_match_distances.append(float(line));
+                line = f.readline()
+            plt.hist(bad_match_distances)
+            plt.show()

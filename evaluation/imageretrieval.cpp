@@ -27,17 +27,17 @@ int get_dist_metric(string metric);
 bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
 bool is_desc(std::string fname);
 bool is_hidden_file(std::string fname);
-bool is_same_cat(int query_cat, string desc_fname);
+string get_cat(string desc_fname);
 
 int main(int argc, char *argv[]) {
 	Mat query_desc, database_desc;
-	string desc_name, results = "", img_1_name, db_path;
+	string desc_name, db_path, query_cat;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, fixed_dist_thresh = INFINITY;
-	int dist_metric, verbose = 0;
+	int dist_metric, verbose_output = 0;
 
-	if(argc < 7) {
-		cout << "Usage ./imageretrieval parameters_file desc_name dist_threshold dist_metric query_descs desc_database [results]\n";
+	if(argc < 8) {
+		cout << "Usage ./imageretrieval parameters_file desc_name dist_threshold dist_metric query_descs desc_database verbose_output\n";
 		return -1;
 	}
 
@@ -53,13 +53,9 @@ int main(int argc, char *argv[]) {
 		if(var == "DIST_RATIO_THRESH") {
 			dist_ratio_thresh = stof(value);
 		}
-		else if(var == "VERBOSE") {
-			verbose = stof(value);
-		}
-	}
-
-	if(verbose) {
-		cout << "Starting execution.\n";
+//		else if(var == "VERBOSE") {
+//			verbose = stof(value);
+//		}
 	}
 
 	// Parse remaining arguments
@@ -68,22 +64,13 @@ int main(int argc, char *argv[]) {
 	dist_metric = get_dist_metric(argv[4]);
 
 	query_desc = parse_file(argv[5], ',', CV_8U);
-
-	if(verbose) {
-		cout << "Parsed query descriptor.\n";
-	}
-
-	if(argc > 7) {
-		results = argv[7];
-	}
-
-	if(verbose) {
-		cout << "Processed input.\n";
-	}
+	query_cat = get_cat(argv[5]);
 
 	// Extract all descriptors from database
 	vector<string> desc_vec;
 	db_path = argv[6];
+
+	verbose_output = atoi(argv[7]);
 
 	if(is_directory(db_path)) {
 		vector<string> db_subdirs;
@@ -134,52 +121,37 @@ int main(int argc, char *argv[]) {
     		}
 	);
 
-	for(int const& i: ind) {
-
-	}
-
 	// Use data from last step to build metrics
 	float ave_precision = 0;
-
+	int num_rel_imgs = 0;
+	bool is_first_img_rel = false;
+	for(int rank = 1; rank <= ind.size(); rank++) {
+		int i = ind[rank - 1];
+		if(query_cat == get_cat(desc_vec[i])) {
+			num_rel_imgs++;
+			ave_precision += (float)num_rel_imgs / rank;
+			if(rank == 1) {
+				is_first_img_rel = true;
+			}
+		}
+	}
 
 	// Export metrics
-	if(results == "") { // no directory specified for exporting results; print to console
+	if(verbose_output) {
 		cout << desc_name << " descriptor results:\n";
-		cout << "-----------------------\n";
-//		cout << "Match ratio: " << match_ratio << "\n";
-//		cout << "Matching score: " << matching_score << "\n";
-//		cout << "Precision: " << precision << "\n";
-//		cout << "Recall: " << recall << "\n";
+		cout << "-----------------------"                                  << "\n";
+		cout << "Average precision: " << ave_precision                     << "\n";
+		cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
+		cout                                                               << "\n";
+		for(int rank = 1; rank <= ind.size(); rank++) {
+			int i = ind[rank - 1];
+			cout << setw(5) << right << rank << " ";
+			cout << setw(5) << right << score[i] << " ";
+			cout << desc_vec[i] << "\n";
+		}
 	}
 	else {
-//		std::ofstream f;
-//		f.open(results + "eval_" + img_1_name + "_to_" + img_2_name + ".txt");
-//		f << "Descriptor:                          " << desc_name              << "\n";
-//		f << "Image 1:                             " << argv[3]                << "\n";
-//		f << "Image 2:                             " << argv[6]                << "\n";
-//		f << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
-//		f                                                                      << "\n";
-//		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
-//		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
-//		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
-//		f << "Number of Matches:                   " << good_matches.size()    << "\n";
-//		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";
-//		f << "Number of Correspondences:           " << num_correspondences    << "\n";
-//		f                                                                      << "\n";
-//		f << "Minimum Correct Distance:            " << min_correct_dist       << "\n";
-//		f << "Average Correct Distance:            " << ave_correct_dist       << "\n";
-//		f << "Maximum Correct Distance:            " << max_correct_dist       << "\n";
-//		f << "Minimum Incorrect Distance:          " << min_incorrect_dist     << "\n";
-//		f << "Average Incorrect Distance:          " << ave_incorrect_dist     << "\n";
-//		f << "Maximum Incorrect Distance:          " << max_incorrect_dist     << "\n";
-//		f                                                                      << "\n";
-//		f << "Match ratio:                         " << match_ratio            << "\n";
-//		f << "Matching score:                      " << matching_score         << "\n";
-//		f << "Precision:                           " << precision              << "\n";
-//		f << "Recall:                              " << recall                 << "\n";
-//		f << "Matching time (ms):                  " << match_time             << "\n";
-//		f << "Matching time per keypoint (mus):    " << match_time_per_kp      << "\n";
-//		f.close();
+		cout << ave_precision << " " << (is_first_img_rel ? 1 : 0);
 	}
 
 	return 0;
@@ -293,6 +265,8 @@ bool is_desc(std::string fname) {
 	return(fname_split.back() == "descriptor.csv");
 }
 
-bool is_same_cat(int query_cat, string desc_fname) {
-
+string get_cat(string desc_fname) {
+	vector<string> path_split;
+	boost::split(path_split, desc_fname, boost::is_any_of("/"));
+	return(path_split[path_split.size() - 2]);
 }
