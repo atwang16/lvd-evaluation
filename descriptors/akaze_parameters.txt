@@ -1,5 +1,4 @@
 distance=HAMMING
-descriptor_type=5
 descriptor_size=0
 descriptor_channels=3
 threshold=0.001

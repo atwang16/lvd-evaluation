@@ -58,10 +58,7 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
 		value = line_split.back();
-		if(var == "descriptor_type") {
-			descriptor_type = stoi(value);
-		}
-		else if(var == "descriptor_size") {
+		if(var == "descriptor_size") {
 			descriptor_size = stoi(value);
 		}
 		else if(var == "descriptor_channels") {
@@ -84,7 +81,7 @@ void detectAndCompute(cv::Mat image, std::vector<cv::KeyPoint>& keypoints, cv::M
 	// Extract keypoints and compute descriptors
 	cv::Ptr<cv::Feature2D> akaze = cv::AKAZE::create(descriptor_type, descriptor_size, descriptor_channels, threshold, nOctaves, nOctaveLayers, diffusivity);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	akaze->detect(image, keypoints, cv::noArray());
+	akaze->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 	akaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, false); // bug seems to make separate detection and extraction not work
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
@@ -224,6 +221,7 @@ int main(int argc, char *argv[]) {
 	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " microseconds" << "\n";
 	f << "Average time to extract descriptors, per keypoint: " << desc_time << " microseconds" << "\n";
 	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
+	f << "Number of images:                                  " << num_images << "\n";
 	f.close();
 
 	return 0;

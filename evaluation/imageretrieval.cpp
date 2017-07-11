@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
 
 		for(auto const& cat: db_subdirs) {
 			vector<string> cat_split;
-			boost::split(cat_split, cat, boost::is_any_of("/"));
-			string seq_name = cat_split.back();
-			if(!is_hidden_file(seq_name)) {
+//			boost::split(cat_split, cat, boost::is_any_of("/"));
+//			string seq_name = cat_split.back();
+			if(is_directory(cat)) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
 					if(is_desc(fname)) {
@@ -95,46 +95,64 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	vector<int> score;
+	// Calculate number of correspondences for each database image
+	vector<int> num_corr;
+	int nc = 0;
+	vector< vector<DMatch> > nn_matches;
+	Ptr< BFMatcher > matcher = BFMatcher::create(dist_metric); // no cross check
+
 	for(int i = 0; i < desc_vec.size(); i++) {
 		Mat database_desc = parse_file(desc_vec[i], ',', CV_8U);
-		Ptr< BFMatcher > matcher = BFMatcher::create(dist_metric); // no cross check
-		vector< vector<DMatch> > nn_matches;
 		matcher->knnMatch(query_desc, database_desc, nn_matches, 2);
 
-		score.push_back(0);
+		nc = 0;
 		for(int i = 0; i < nn_matches.size(); i++) {
 			if(nn_matches[i][0].distance < fixed_dist_thresh && nn_matches[i][0].distance < dist_ratio_thresh * nn_matches[i][1].distance) {
-				score[i]++;
+				nc++;
 			}
 		}
+		num_corr.push_back(nc);
+		vector< vector<DMatch> >().swap(nn_matches);
 	}
 
-	// Find ordering of scores
+	// Find permutation of number of correspondences
 	vector<int> ind;
 	for(int i = 0; i < desc_vec.size(); i++) {
 		ind.push_back(i);
 	}
 	sort(ind.begin(), ind.end(),
 			[&](const int& i, const int& j) {
-        		return (score[i] > score[j]);
+        		return (num_corr[i] > num_corr[j]);
     		}
 	);
+
+	// Create vector of rank labels to account for ties
+	vector<int> rank;
+	rank.push_back(1); // initial value
+	for(int ord = 2; ord <= ind.size(); ord++) {
+		if(num_corr[ind[ord - 1]] == num_corr[ind[ord - 2]]) { // if equal number of matches is found
+			rank.push_back(rank[rank.size() - 1]);
+		}
+		else {
+			rank.push_back(ord);
+		}
+	}
 
 	// Use data from last step to build metrics
 	float ave_precision = 0;
 	int num_rel_imgs = 0;
 	bool is_first_img_rel = false;
-	for(int rank = 1; rank <= ind.size(); rank++) {
-		int i = ind[rank - 1];
+	for(int ord = 1; ord <= ind.size(); ord++) {
+		int i = ind[ord - 1];
 		if(query_cat == get_cat(desc_vec[i])) {
 			num_rel_imgs++;
-			ave_precision += (float)num_rel_imgs / rank;
-			if(rank == 1) {
+			ave_precision += (float)num_rel_imgs / rank[ord - 1];
+			if(ord == 1) {
 				is_first_img_rel = true;
 			}
 		}
 	}
+	ave_precision /= num_rel_imgs;
 
 	// Export metrics
 	if(verbose_output) {
@@ -143,10 +161,10 @@ int main(int argc, char *argv[]) {
 		cout << "Average precision: " << ave_precision                     << "\n";
 		cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
 		cout                                                               << "\n";
-		for(int rank = 1; rank <= ind.size(); rank++) {
-			int i = ind[rank - 1];
-			cout << setw(5) << right << rank << " ";
-			cout << setw(5) << right << score[i] << " ";
+		for(int ord = 1; ord <= ind.size(); ord++) {
+			int i = ind[ord - 1];
+			cout << setw(5) << right << rank[ord - 1] << " ";
+			cout << setw(5) << right << num_corr[i] << " ";
 			cout << desc_vec[i] << "\n";
 		}
 	}

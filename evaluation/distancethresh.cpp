@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
 	homography = parse_file(argv[9], ' ', CV_32F);
 	dist_metric = get_dist_metric(argv[10]);
 
-	append = (argv[11][0] == '1');
+	append = stoi(argv[11]);
 
 	if(argc >= 13) {
 		results = argv[12];
@@ -145,17 +145,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
-	vector<DMatch> correct_matches;
-	vector<float> good_match_dist, bad_match_dist;
+	vector<float> pos_dist, neg_dist;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i][0].queryIdx;
 		int kp_id_2 = good_matches[i][0].trainIdx;
 		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
-			good_match_dist.push_back(good_matches[i][0].distance);
-			bad_match_dist.push_back(good_matches[i][1].distance);
+			pos_dist.push_back(good_matches[i][0].distance);
+			neg_dist.push_back(good_matches[i][1].distance);
 		}
 		else {
-			bad_match_dist.push_back(good_matches[i][0].distance);
+			neg_dist.push_back(good_matches[i][0].distance);
 		}
 	}
 
@@ -172,19 +171,19 @@ int main(int argc, char *argv[]) {
 
 	ofstream f_goodmatches, f_badmatches, f_corrmatches;
 
-	f_goodmatches.open(results + desc_name + "_goodmatches_distthresh.csv", ofstream::out | (ofstream::app * append));
-	for(int i = 0; i < good_match_dist.size(); i++) {
-		f_goodmatches << good_match_dist[i] << "\n";
+	f_goodmatches.open(results + desc_name + "_pos_dists.csv", ofstream::out | (ofstream::app * append));
+	for(int i = 0; i < pos_dist.size(); i++) {
+		f_goodmatches << pos_dist[i] << "\n";
 	}
 	f_goodmatches.close();
 
-	f_badmatches.open(results + desc_name + "_badmatches_distthresh.csv", ofstream::out | (ofstream::app * append));
-	for(int i = 0; i < bad_match_dist.size(); i++) {
-		f_badmatches << bad_match_dist[i] << "\n";
+	f_badmatches.open(results + desc_name + "_neg_dists.csv", ofstream::out | (ofstream::app * append));
+	for(int i = 0; i < neg_dist.size(); i++) {
+		f_badmatches << neg_dist[i] << "\n";
 	}
 	f_badmatches.close();
 
-	f_corrmatches.open(results + desc_name + "_corrmatches_distthresh.csv", ofstream::out | (ofstream::app * append));
+	f_corrmatches.open(results + desc_name + "_allpos_dists.csv", ofstream::out | (ofstream::app * append));
 	for(int i = 0; i < corr_match_dist.size(); i++) {
 		f_corrmatches << corr_match_dist[i] << "\n";
 	}

@@ -24,7 +24,7 @@ def generate_descriptors(image_dir):
 if __name__ == "__main__":
     if len(sys.argv) < 4:
         print("Usage: python imageretrieval.py desc_name database generate_descriptors")
-        sys.exit(1);
+        sys.exit(1)
 
     desc_name = sys.argv[1]
     database = sys.argv[2]

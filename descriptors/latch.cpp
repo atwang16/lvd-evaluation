@@ -205,6 +205,7 @@ int main(int argc, char *argv[]) {
 	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " nanoseconds" << "\n";
 	f << "Average time to extract descriptors, per keypoint: " << desc_time << " nanoseconds" << "\n";
 	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
+	f << "Number of images:                                  " << num_images << "\n";
 	f.close();
 
 	return 0;
