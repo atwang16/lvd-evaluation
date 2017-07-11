@@ -15,7 +15,7 @@ PARAMETERS_FILE_PATH = os.path.join(root_folder, "evaluation", "parameters.txt")
 DESCRIPTOR_PARAMETERS_DIR = os.path.join(root_folder, "descriptors")
 distance = "L2"
 append = "0"
-
+img_extensions = [".jpg", ".png", ".ppm", ".pgm"]
 
 def generate_results(path_addendum):
     img_num = 2
@@ -28,7 +28,8 @@ def generate_results(path_addendum):
     images = []
     homographies = []
     for file in expand_image_dir:
-        if file[0] == "i":  # image; of form img#.ext
+        img_ext = os.path.splitext(os.path.join(results_sf_path, file))[1]
+        if img_ext in img_extensions:  # image
             images.append(file)
         elif file[0] == "H":  # homography; of form H1to#p
             homographies.append(file)
@@ -98,9 +99,9 @@ if __name__ == "__main__":
 
     subfolders = os.listdir(desc_kp_dir)
 
-    # for sf in subfolders:
-    #     if sf[0] != "." and os.path.isdir(os.path.join(desc_kp_dir, sf)):  # ignore .DS_STORE-like files
-    #         generate_results(sf)
+    for sf in subfolders:
+        if sf[0] != "." and os.path.isdir(os.path.join(desc_kp_dir, sf)):  # ignore .DS_STORE-like files
+            generate_results(sf)
 
     gs = gridspec.GridSpec(3, 1)
     fig = plt.figure()

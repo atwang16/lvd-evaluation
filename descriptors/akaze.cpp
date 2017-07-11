@@ -180,8 +180,8 @@ int main(int argc, char *argv[]) {
 		boost::split(strs_, img_name, boost::is_any_of("."));
 		std::string tp =  strs_[0];
 
-		dt_fname_desc = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_descriptor.csv";
-		dt_fname_key = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_keypoint.csv";
+		dt_fname_desc = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_ds.csv";
+		dt_fname_key = output_directory + descr_name + "/" + main_dir + seq_name + "/" + tp + "_kp.csv";
 
 		// Compute descriptors
 		cv::Mat descriptors;
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
 	total_time /= num_images;
 
 	ofstream f;
-	f.open(output_directory + descr_name + "/" + main_dir + "time.txt");
+	f.open(output_directory + descr_name + "/" + main_dir + "timeresults.txt");
 	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " microseconds" << "\n";
 	f << "Average time to extract descriptors, per keypoint: " << desc_time << " microseconds" << "\n";
 	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";

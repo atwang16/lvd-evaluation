@@ -60,7 +60,9 @@ int main(int argc, char *argv[]) {
 
 	// Parse remaining arguments
 	desc_name = argv[2];
-	fixed_dist_thresh = stof(argv[3]);
+	if(strcmp(argv[3], "inf") != 0) {
+		fixed_dist_thresh = atof(argv[3]);
+	}
 	dist_metric = get_dist_metric(argv[4]);
 
 	query_desc = parse_file(argv[5], ',', CV_8U);

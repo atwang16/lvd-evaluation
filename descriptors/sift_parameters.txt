@@ -4,3 +4,4 @@ nOctaveLayers=3
 contrastThreshold=0.04
 edgeThreshold=10
 sigma=1.6
+distancethreshold=250
