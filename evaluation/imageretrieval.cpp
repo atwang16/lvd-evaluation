@@ -1,18 +1,11 @@
 /*
- * basetest.cpp
+ * imageretrieval.cpp
  *
- *  Created on: Jun 27, 2017
+ *  Created on: Jul 6, 2017
  *      Author: austin
  */
 
-#include <opencv2/opencv.hpp>
-#include <cstdint>
-#include <cmath>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <cmath>
+#include "utils.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
@@ -22,9 +15,6 @@ using namespace cv;
 using namespace std::chrono;
 using namespace boost::filesystem;
 
-Mat parse_file(string fname, char delimiter, int type);
-int get_dist_metric(string metric);
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
 bool is_desc(std::string fname);
 bool is_hidden_file(std::string fname);
 string get_cat(string desc_fname);
@@ -53,9 +43,6 @@ int main(int argc, char *argv[]) {
 		if(var == "DIST_RATIO_THRESH") {
 			dist_ratio_thresh = stof(value);
 		}
-//		else if(var == "VERBOSE") {
-//			verbose = stof(value);
-//		}
 	}
 
 	// Parse remaining arguments
@@ -66,6 +53,7 @@ int main(int argc, char *argv[]) {
 	dist_metric = get_dist_metric(argv[4]);
 
 	query_desc = parse_file(argv[5], ',', CV_8U);
+	string query_path = argv[5];
 	query_cat = get_cat(argv[5]);
 
 	// Extract all descriptors from database
@@ -84,12 +72,10 @@ int main(int argc, char *argv[]) {
 
 		for(auto const& cat: db_subdirs) {
 			vector<string> cat_split;
-//			boost::split(cat_split, cat, boost::is_any_of("/"));
-//			string seq_name = cat_split.back();
 			if(is_directory(cat)) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
-					if(is_desc(fname)) {
+					if(is_desc(fname) && query_path != fname) { // make sure file is a descriptor and that it is not the same file
 						desc_vec.push_back(fname);
 					}
 				}
@@ -101,7 +87,7 @@ int main(int argc, char *argv[]) {
 	vector<int> num_corr;
 	int nc = 0;
 	vector< vector<DMatch> > nn_matches;
-	Ptr< BFMatcher > matcher = BFMatcher::create(dist_metric); // no cross check
+	Ptr< BFMatcher > matcher = BFMatcher::create(dist_metric);
 
 	for(int i = 0; i < desc_vec.size(); i++) {
 		Mat database_desc = parse_file(desc_vec[i], ',', CV_8U);
@@ -170,123 +156,26 @@ int main(int argc, char *argv[]) {
 			cout << desc_vec[i] << "\n";
 		}
 	}
-	else {
+	else { // print bare-minimum statistics; easier for Python interface code to read
 		cout << ave_precision << " " << (is_first_img_rel ? 1 : 0);
 	}
 
 	return 0;
 }
 
-// TODO: make a better type-adapatable version
-Mat parse_file(string fname, char delimiter, int type) {
-	std::ifstream inputfile(fname);
-	string current_line;
-
-	if(type != CV_8U && type != CV_32F) {
-		cout << "Error: invalid type passed to parse_file. Default float assumed.\n";
-		type = CV_32F;
-	}
-
-	if(type == CV_32F) {
-		vector< vector<float> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<float> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atof(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_32F);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<float>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-	else { // CV_8U
-		vector< vector<uint8_t> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<uint8_t> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atoi(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_8U);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<uint8_t>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-}
-
-int get_dist_metric(string metric) {
-	if(metric == "L2") {
-		return NORM_L2;
-	}
-	else if(metric == "L1") {
-		return NORM_L1;
-	}
-	else if(metric == "HAMMING") {
-		return NORM_HAMMING;
-	}
-	else if(metric == "HAMMING2") {
-		return NORM_HAMMING2;
-	}
-	else { // default
-		return NORM_L2;
-	}
-}
-
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold) {
-	Mat hom_coord_vec = Mat::ones(3, 1, CV_32FC1);
-	hom_coord_vec.at<float>(0) = kp_1.pt.x;
-	hom_coord_vec.at<float>(1) = kp_1.pt.y;
-	Mat proj_kp_1_2 =  hom * hom_coord_vec;
-	proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
-	float dist = sqrt(pow(kp_2.pt.x - proj_kp_1_2.at<float>(0), 2) + pow(kp_2.pt.y - proj_kp_1_2.at<float>(1), 2));
-	return dist < threshold;
-}
-
-bool is_hidden_file(std::string fname) {
+bool is_hidden_file(string fname) {
     return(fname[0] == '.');
 }
 
-bool is_desc(std::string fname) {
+bool is_desc(string fname) {
 	vector<string> fname_split;
-	boost::split(fname_split, fname, boost::is_any_of("_"));
-	return(fname_split.back() == "descriptor.csv");
+	boost::split(fname_split, fname, boost::is_any_of("_,."));
+	return(fname_split[fname_split.size() - 2] == "ds");
 }
 
-string get_cat(string desc_fname) {
-	vector<string> path_split;
-	boost::split(path_split, desc_fname, boost::is_any_of("/"));
-	return(path_split[path_split.size() - 2]);
+string get_cat(string fname) {
+	vector<string> fname_split;
+	boost::split(fname_split, fname, boost::is_any_of("_,."));
+	int i = fname_split.size() - 5;
+	return(fname_split[i] + "_" + fname_split[i + 1]);
 }

@@ -3,63 +3,52 @@ import sys
 import os.path
 import os
 
-root_folder = os.path.join(os.getcwd(), "..")
-results_folder = "results"
-image_folder = "datasets"
-results_dir = os.path.join(root_folder, results_folder)
-image_dir = os.path.join(root_folder, image_folder)
-BASE_TEST_PATH_DIR = os.path.join(root_folder, "basetest", "basetest")
-PARAMETERS_FILE_PATH = os.path.join(root_folder, "evaluation", "parameters.txt")
-DESCRIPTOR_PARAMETERS_DIR = os.path.join(root_folder, "descriptors")
+ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+RESULTS_PATH = os.path.join(ROOT_PATH, "results")
+IMG_DB_PATH = os.path.join(ROOT_PATH, "datasets")
+BASE_TEST_BUILD = os.path.join(ROOT_PATH, "build_basetest", "basetest")
+PARAMETERS_FILE_PATH = os.path.join(ROOT_PATH, "evaluation", "parameters.txt")
+DESCRIPTOR_PARAMETERS_DIR = os.path.join(ROOT_PATH, "descriptors")
+IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
 distance = "L2"
 
-def generate_results(path_addendum):
+def is_image(fname):
+    _, ext = os.path.splitext(fname)
+    return ext in IMG_EXTENSIONS
+
+def generate_results(sf):
     img_num = 2
-    image_sf_path = os.path.join(image_dir, path_addendum)
-    results_sf_path = os.path.join(results_dir, path_addendum)
-    expand_image_dir = os.listdir(image_sf_path)
-    expand_descr_dir = os.listdir(results_sf_path)
+    image_sf_path = os.path.join(img_database_path, sf)
+    results_sf_path = os.path.join(res_database_path, sf)
+    expand_image_sf = os.listdir(image_sf_path)
 
     images = []
-    homographies = []
-    for file in expand_image_dir:
-        if file[0] == "i": # image; of form img#.ext
+    for file in expand_image_sf:
+        if is_image(file):
             images.append(file)
-        elif file[0] == "H": # homography; of form H1to#p
-            homographies.append(file)
     sorted(images)
-    sorted(homographies)
-
-    descriptors = []
-    keypoints = []
-    for file in expand_descr_dir:
-        if file[0] != "." and file[0:4] != "disp" and file[0:4] != "eval": # not a .DS_STORE or result file
-            if file[5] == "d": # descriptor; of form img#_descriptor.csv
-                descriptors.append(file)
-            elif file[5] == "k": # keypoint; of form img#_keypoint.csv
-                keypoints.append(file)
-    sorted(descriptors)
-    sorted(keypoints)
 
     img1_path = os.path.join(image_sf_path, images[0])
-    desc1_path = os.path.join(results_sf_path, descriptors[0])
-    kp1_path = os.path.join(results_sf_path, keypoints[0])
+    img1_base_name, _ = os.path.splitext(images[0])
+    desc1_path = os.path.join(results_sf_path, img1_base_name + "_ds.csv")
+    kp1_path = os.path.join(results_sf_path, img1_base_name + "_kp.csv")
 
-    while img_num <= min([len(images), len(homographies), len(descriptors), len(keypoints)]):
+    while img_num <= len(images):
         current_img = images[img_num - 1]
-        current_desc = descriptors[img_num - 1]
-        current_kp = keypoints[img_num - 1]
+        img_base_name, _ = os.path.splitext(current_img)
+        current_ds = img_base_name + "_ds.csv"
+        current_kp = img_base_name + "_kp.csv"
+        current_hom = "H1to" + str(img_num) + "p"
 
         img2_path = os.path.join(image_sf_path, current_img)
-        desc2_path = os.path.join(results_sf_path, current_desc)
+        desc2_path = os.path.join(results_sf_path, current_ds)
         kp2_path = os.path.join(results_sf_path, current_kp)
-        hom_path = os.path.join(image_sf_path, homographies[img_num - 1]) # assuming there is an identity homography
-        results_path = os.path.join(results_dir, path_addendum + os.sep)
+        hom_path = os.path.join(image_sf_path, current_hom)
 
-        args = [BASE_TEST_PATH_DIR, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
-                kp2_path, hom_path, distance, results_path]
+        args = [BASE_TEST_BUILD, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
+                kp2_path, hom_path, distance, results_sf_path + os.sep]
 
-        print(desc_name + ": " + database + " - " + path_addendum + ": " + images[0] + " to " + current_img)
+        print(desc_name + ": " + database + " - " + sf + ": " + images[0] + " to " + current_img)
         subprocess.run(args)
         img_num += 1
 
@@ -68,26 +57,27 @@ def generate_results(path_addendum):
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python basetest.py desc_name database_name")
-    else:
-        desc_name = sys.argv[1]
-        database = sys.argv[2]
-        image_dir = os.path.join(image_dir, database)
-        results_dir = os.path.join(results_dir, desc_name, database)
+        sys.exit(1)
 
-        with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
+    desc_name = sys.argv[1]
+    database = sys.argv[2]
+    img_database_path = os.path.join(IMG_DB_PATH, database)
+    res_database_path = os.path.join(RESULTS_PATH, desc_name, database)
+
+    with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split("=")
+            var = line_split[0]
+            value = line_split[-1]
+            if(value[-1] == "\n"):
+                value = value[:-1]
+            if var == "distance":
+                distance = value
             line = f.readline()
-            while line != "":
-                line_split = line.split("=")
-                var = line_split[0]
-                value = line_split[-1]
-                if(value[-1] == "\n"):
-                    value = value[:-1]
-                if var == "distance":
-                    distance = value
-                line = f.readline()
 
-        subfolders = os.listdir(results_dir)
+    subfolders = os.listdir(res_database_path)
 
-        for sf in subfolders:
-            if sf[0] != "." and os.path.isdir(os.path.join(results_dir, sf)): # ignore .DS_STORE-like files
-                generate_results(sf)
+    for sf in subfolders:
+        if os.path.isdir(os.path.join(res_database_path, sf)):
+            generate_results(sf)

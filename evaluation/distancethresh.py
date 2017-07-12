@@ -5,85 +5,70 @@ import os
 import matplotlib.pylab as plt
 import matplotlib.gridspec as gridspec
 
-root_folder = os.path.join(os.getcwd(), "..")
-results_folder = "results"
-image_folder = "datasets"
-results_dir = os.path.join(root_folder, results_folder)
-image_dir = os.path.join(root_folder, image_folder)
-EXECUTABLE_PATH_DIR = os.path.join(root_folder, "distancethreshold", "distances")
-PARAMETERS_FILE_PATH = os.path.join(root_folder, "evaluation", "parameters.txt")
-DESCRIPTOR_PARAMETERS_DIR = os.path.join(root_folder, "descriptors")
+ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+RESULTS_PATH = os.path.join(ROOT_PATH, "results")
+IMG_DB_PATH = os.path.join(ROOT_PATH, "datasets")
+DIST_THRESH_BUILD = os.path.join(ROOT_PATH, "build_distthresh", "distances")
+PARAMETERS_FILE_PATH = os.path.join(ROOT_PATH, "evaluation", "parameters.txt")
+DESCRIPTOR_PARAMETERS_DIR = os.path.join(ROOT_PATH, "descriptors")
+IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
 distance = "L2"
-append = "0"
-img_extensions = [".jpg", ".png", ".ppm", ".pgm"]
+append = 0
 
-def generate_results(path_addendum):
+def is_image(fname):
+    _, ext = os.path.splitext(fname)
+    return ext in IMG_EXTENSIONS
+
+def generate_results(sf):
     img_num = 2
-    image_sf_path = os.path.join(image_dir, path_addendum)
-    results_sf_path = os.path.join(desc_kp_dir, path_addendum)
+    image_sf_path = os.path.join(image_dir, sf)
+    results_sf_path = os.path.join(ds_kp_path, sf)
     expand_image_dir = os.listdir(image_sf_path)
-    expand_descr_dir = os.listdir(results_sf_path)
     global append
 
     images = []
-    homographies = []
     for file in expand_image_dir:
-        img_ext = os.path.splitext(os.path.join(results_sf_path, file))[1]
-        if img_ext in img_extensions:  # image
+        if is_image(file):
             images.append(file)
-        elif file[0] == "H":  # homography; of form H1to#p
-            homographies.append(file)
     sorted(images)
-    sorted(homographies)
 
-    descriptors = []
-    keypoints = []
-    for file in expand_descr_dir:
-        if file[0] != "." and file[0:4] != "disp" and file[0:4] != "eval":  # not a .DS_STORE or result file
-            if file[5] == "d":  # descriptor; of form img#_descriptor.csv
-                descriptors.append(file)
-            elif file[5] == "k":  # keypoint; of form img#_keypoint.csv
-                keypoints.append(file)
-    sorted(descriptors)
-    sorted(keypoints)
+    img1_base_name, _ = os.path.splitext(images[0])
+    desc1_path = os.path.join(results_sf_path, img1_base_name + "_ds.csv")
+    kp1_path = os.path.join(results_sf_path, img1_base_name + "_kp.csv")
 
-    img1_path = os.path.join(image_sf_path, images[0])
-    desc1_path = os.path.join(results_sf_path, descriptors[0])
-    kp1_path = os.path.join(results_sf_path, keypoints[0])
-
-    while img_num <= min([len(images), len(homographies), len(descriptors), len(keypoints)]):
+    while img_num <= len(images):
         current_img = images[img_num - 1]
-        current_desc = descriptors[img_num - 1]
-        current_kp = keypoints[img_num - 1]
+        img_base_name, _ = os.path.splitext(current_img)
+        current_ds = img_base_name + "_ds.csv"
+        current_kp = img_base_name + "_kp.csv"
+        current_hom = "H1to" + str(img_num) + "p"
 
-        img2_path = os.path.join(image_sf_path, current_img)
-        desc2_path = os.path.join(results_sf_path, current_desc)
+        desc2_path = os.path.join(results_sf_path, current_ds)
         kp2_path = os.path.join(results_sf_path, current_kp)
-        hom_path = os.path.join(image_sf_path, homographies[img_num - 1])  # assuming there is an identity homography
-        results_path = results_dir + os.sep
+        hom_path = os.path.join(image_sf_path, current_hom)
 
-        args = [EXECUTABLE_PATH_DIR, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path,
-                desc2_path,
-                kp2_path, hom_path, distance, append, results_path]
+        args = [DIST_THRESH_BUILD, PARAMETERS_FILE_PATH, desc_name, desc1_path, kp1_path, desc2_path, kp2_path,
+                hom_path, distance, str(append), results_path + os.sep]
 
-        print(desc_name + ": " + database + " - " + path_addendum + ": " + images[0] + " to " + current_img)
+        print(desc_name + ": " + database + " - " + sf + ": " + images[0] + " to " + current_img)
         subprocess.run(args)
         img_num += 1
-        append = "1"
+        append = 1
 
 ####### MAIN #######
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
-        print("Usage: python distancethresh.py desc_name database_name append")
+    if len(sys.argv) < 3:
+        print("Usage: python distancethresh.py desc_name database_name [-append]")
         sys.exit(1)
 
     desc_name = sys.argv[1]
     database = sys.argv[2]
-    append = "1" if sys.argv[3] == "1" else "0"
-    image_dir = os.path.join(image_dir, database)
-    results_dir = os.path.join(results_dir, desc_name)
-    desc_kp_dir = os.path.join(results_dir, database)
+    if len(sys.argv) >= 4:
+        append = 1 if sys.argv[3] == "-append" else 0
+    image_dir = os.path.join(IMG_DB_PATH, database)
+    results_path = os.path.join(RESULTS_PATH, desc_name)
+    ds_kp_path = os.path.join(RESULTS_PATH, desc_name, database)
 
     with open(os.path.join(DESCRIPTOR_PARAMETERS_DIR, desc_name + "_parameters.txt")) as f:
         line = f.readline()
@@ -97,16 +82,16 @@ if __name__ == "__main__":
                 distance = value
             line = f.readline()
 
-    subfolders = os.listdir(desc_kp_dir)
+    subfolders = os.listdir(ds_kp_path)
 
     for sf in subfolders:
-        if sf[0] != "." and os.path.isdir(os.path.join(desc_kp_dir, sf)):  # ignore .DS_STORE-like files
+        if os.path.isdir(os.path.join(ds_kp_path, sf)):  # ignore .DS_STORE-like files
             generate_results(sf)
 
     gs = gridspec.GridSpec(3, 1)
     fig = plt.figure()
 
-    with open(os.path.join(results_dir, desc_name + "_allpos_dists.csv")) as f:
+    with open(os.path.join(results_path, desc_name + "_cor_dists.csv")) as f:
         allpos_subplot = fig.add_subplot(gs[0])
         corr_match_distances = []
         line = f.readline()
@@ -116,7 +101,7 @@ if __name__ == "__main__":
 
         allpos_subplot.hist(corr_match_distances, bins=40, color='g')
 
-    with open(os.path.join(results_dir, desc_name + "_pos_dists.csv")) as f:
+    with open(os.path.join(results_path, desc_name + "_pos_dists.csv")) as f:
         pos_subplot = fig.add_subplot(gs[1], sharex = allpos_subplot)
         good_match_distances = []
         line = f.readline()
@@ -126,7 +111,7 @@ if __name__ == "__main__":
 
         pos_subplot.hist(good_match_distances, bins=40, color='b')
 
-    with open(os.path.join(results_dir, desc_name + "_neg_dists.csv")) as f:
+    with open(os.path.join(results_path, desc_name + "_neg_dists.csv")) as f:
         neg_subplot = fig.add_subplot(gs[2], sharex=allpos_subplot)
         bad_match_distances = []
         line = f.readline()
@@ -136,5 +121,5 @@ if __name__ == "__main__":
 
         neg_subplot.hist(bad_match_distances, bins=40, color='r')
 
-    plt.savefig(os.path.join(results_dir, desc_name + "_dist_graph.png"), bbox_inches='tight')
+    plt.savefig(os.path.join(results_path, desc_name + "_dist_graph.png"), bbox_inches='tight')
     plt.show()

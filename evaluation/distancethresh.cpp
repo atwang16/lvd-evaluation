@@ -1,17 +1,11 @@
 /*
- * basetest.cpp
+ * distancethresh.cpp
  *
- *  Created on: Jun 27, 2017
+ *  Created on: Jul 7, 2017
  *      Author: austin
  */
 
-#include <opencv2/opencv.hpp>
-#include <cstdint>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <cmath>
+#include "utils.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -20,20 +14,16 @@
 using namespace std;
 using namespace cv;
 
-Mat parse_file(string fname, char delimiter, int type);
-int get_dist_metric(string metric);
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
-
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string desc_name, results = "", img_1_name, img_2_name;
+	string desc_name, results = "";
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
 	int dist_metric, append = 1, verbose = 0;
 
-	if(argc < 12) {
-		cout << "Usage ./distances parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric append [results]\n";
+	if(argc < 10) {
+		cout << "Usage ./distances parameters_file desc_name desc_1 keypoint_1 desc2 keypoint2 homography dist_metric append [results]\n";
 		return -1;
 	}
 
@@ -63,18 +53,11 @@ int main(int argc, char *argv[]) {
 
 	// Parse remaining arguments
 	desc_name = argv[2];
-	img_1 = imread(argv[3], CV_LOAD_IMAGE_COLOR);
-	std::vector<std::string> img_1_path_split;
-	boost::split(img_1_path_split, argv[3], boost::is_any_of("/,."));
-	img_1_name = img_1_path_split[img_1_path_split.size()-2];
-	if(verbose) {
-		cout << "Read image 1.\n";
-	}
-	desc_1 = parse_file(argv[4], ',', CV_8U);
+	desc_1 = parse_file(argv[3], ',', CV_8U);
 	if(verbose) {
 		cout << "Parsed descriptor 1.\n";
 	}
-	kp_mat_1 = parse_file(argv[5], ',', CV_32F);
+	kp_mat_1 = parse_file(argv[4], ',', CV_32F);
 	if(verbose) {
 		cout << "Parsed " << kp_mat_1.rows << " keypoints for image 1.\n";
 	}
@@ -89,18 +72,11 @@ int main(int argc, char *argv[]) {
 		kp_vec_1.push_back(kp_1);
 	}
 
-	img_2 = imread(argv[6], CV_LOAD_IMAGE_COLOR);
-	std::vector<std::string> img_2_path_split;
-	boost::split(img_2_path_split, argv[6], boost::is_any_of("/,."));
-	img_2_name = img_2_path_split[img_2_path_split.size()-2];
-	if(verbose) {
-		cout << "Read image 2.\n";
-	}
-	desc_2 = parse_file(argv[7], ',', CV_8U);
+	desc_2 = parse_file(argv[5], ',', CV_8U);
 	if(verbose) {
 		cout << "Parsed descriptor 2.\n";
 	}
-	kp_mat_2 = parse_file(argv[8], ',', CV_32F);
+	kp_mat_2 = parse_file(argv[6], ',', CV_32F);
 	if(verbose) {
 		cout << "Parsed " << kp_mat_2.rows << " keypoints for image 2.\n";
 	}
@@ -114,13 +90,13 @@ int main(int argc, char *argv[]) {
 		kp_2.response = kp_mat_2.at<float>(i, 5);
 		kp_vec_2.push_back(kp_2);
 	}
-	homography = parse_file(argv[9], ' ', CV_32F);
-	dist_metric = get_dist_metric(argv[10]);
+	homography = parse_file(argv[7], ' ', CV_32F);
+	dist_metric = get_dist_metric(argv[8]);
 
-	append = stoi(argv[11]);
+	append = stoi(argv[9]);
 
-	if(argc >= 13) {
-		results = argv[12];
+	if(argc >= 11) {
+		results = argv[10];
 	}
 
 	if(verbose) {
@@ -144,7 +120,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
+	// Use ground truth homography to determine positive versus negative matches
 	vector<float> pos_dist, neg_dist;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i][0].queryIdx;
@@ -158,133 +134,37 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	vector<float> corr_match_dist;
-	// Count total number of correspondences
+	vector<float> cor_dist;
+	// Compute distances between correct correspondences
 	for(int i = 0; i < kp_vec_1.size(); i++) {
 		for(int j = 0; j < kp_vec_2.size(); j++) {
 			if(is_overlapping(kp_vec_1[i], kp_vec_2[j], homography, kp_dist_thresh)) {
-				corr_match_dist.push_back(norm(desc_1.row(i), desc_2.row(j), dist_metric));
+				cor_dist.push_back(norm(desc_1.row(i), desc_2.row(j), dist_metric));
 				break;
 			}
 		}
 	}
 
-	ofstream f_goodmatches, f_badmatches, f_corrmatches;
+	// Save data to csv files
+	ofstream f_pos, f_neg, f_cor;
 
-	f_goodmatches.open(results + desc_name + "_pos_dists.csv", ofstream::out | (ofstream::app * append));
+	f_pos.open(results + desc_name + "_pos_dists.csv", ofstream::out | (ofstream::app * append));
 	for(int i = 0; i < pos_dist.size(); i++) {
-		f_goodmatches << pos_dist[i] << "\n";
+		f_pos << pos_dist[i] << "\n";
 	}
-	f_goodmatches.close();
+	f_pos.close();
 
-	f_badmatches.open(results + desc_name + "_neg_dists.csv", ofstream::out | (ofstream::app * append));
+	f_neg.open(results + desc_name + "_neg_dists.csv", ofstream::out | (ofstream::app * append));
 	for(int i = 0; i < neg_dist.size(); i++) {
-		f_badmatches << neg_dist[i] << "\n";
+		f_neg << neg_dist[i] << "\n";
 	}
-	f_badmatches.close();
+	f_neg.close();
 
-	f_corrmatches.open(results + desc_name + "_allpos_dists.csv", ofstream::out | (ofstream::app * append));
-	for(int i = 0; i < corr_match_dist.size(); i++) {
-		f_corrmatches << corr_match_dist[i] << "\n";
+	f_cor.open(results + desc_name + "_cor_dists.csv", ofstream::out | (ofstream::app * append));
+	for(int i = 0; i < cor_dist.size(); i++) {
+		f_cor << cor_dist[i] << "\n";
 	}
-	f_corrmatches.close();
+	f_cor.close();
 
 	return 0;
-}
-
-Mat parse_file(string fname, char delimiter, int type) {
-	ifstream inputfile(fname);
-	string current_line;
-
-	if(type != CV_8U && type != CV_32F) {
-		cout << "Error: invalid type passed to parse_file. Default float assumed.\n";
-		type = CV_32F;
-	}
-
-	if(type == CV_32F) {
-		vector< vector<float> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<float> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atof(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_32F);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<float>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-	else { // CV_8U
-		vector< vector<uint8_t> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<uint8_t> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atoi(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_8U);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<uint8_t>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-}
-
-int get_dist_metric(string metric) {
-	if(metric == "L2") {
-		return NORM_L2;
-	}
-	else if(metric == "L1") {
-		return NORM_L1;
-	}
-	else if(metric == "HAMMING") {
-		return NORM_HAMMING;
-	}
-	else if(metric == "HAMMING2") {
-		return NORM_HAMMING2;
-	}
-	else { // default
-		return NORM_L2;
-	}
-}
-
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold) {
-	Mat hom_coord_vec = Mat::ones(3, 1, CV_32FC1);
-	hom_coord_vec.at<float>(0) = kp_1.pt.x;
-	hom_coord_vec.at<float>(1) = kp_1.pt.y;
-	Mat proj_kp_1_2 =  hom * hom_coord_vec;
-	proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
-	float dist = sqrt(pow(kp_2.pt.x - proj_kp_1_2.at<float>(0), 2) + pow(kp_2.pt.y - proj_kp_1_2.at<float>(1), 2));
-	return dist < threshold;
 }

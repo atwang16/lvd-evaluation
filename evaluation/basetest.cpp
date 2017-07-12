@@ -5,12 +5,7 @@
  *      Author: austin
  */
 
-#include <opencv2/opencv.hpp>
-#include <cstdint>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include "utils.hpp"
 #include <cmath>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -22,14 +17,10 @@ using namespace std;
 using namespace cv;
 using namespace std::chrono;
 
-Mat parse_file(string fname, char delimiter, int type);
-int get_dist_metric(string metric);
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold);
-
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string dist_metric, desc_name, results = "", img_1_name, img_2_name;
+	string dist_metric, desc_name, results = "", img_1_num, img_1_seq, img_2_num, img_2_seq;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
 	int nb_kp_to_display = 50, cap_correct_displayed = 1, verbose = 0;
@@ -74,7 +65,8 @@ int main(int argc, char *argv[]) {
 	img_1 = imread(argv[3], CV_LOAD_IMAGE_COLOR);
 	std::vector<std::string> img_1_path_split;
 	boost::split(img_1_path_split, argv[3], boost::is_any_of("/,."));
-	img_1_name = img_1_path_split[img_1_path_split.size()-2];
+	img_1_seq = img_1_path_split[img_1_path_split.size()-2].substr(0, 7);
+	img_1_num = img_1_path_split[img_1_path_split.size()-2].substr(8, 3);
 	if(verbose) {
 		cout << "Read image 1.\n";
 	}
@@ -100,7 +92,8 @@ int main(int argc, char *argv[]) {
 	img_2 = imread(argv[6], CV_LOAD_IMAGE_COLOR);
 	std::vector<std::string> img_2_path_split;
 	boost::split(img_2_path_split, argv[6], boost::is_any_of("/,."));
-	img_2_name = img_2_path_split[img_2_path_split.size()-2];
+	img_2_seq = img_2_path_split[img_2_path_split.size()-2].substr(0, 7);
+	img_2_num = img_2_path_split[img_2_path_split.size()-2].substr(8, 3);
 	if(verbose) {
 		cout << "Read image 2.\n";
 	}
@@ -127,6 +120,11 @@ int main(int argc, char *argv[]) {
 
 	if(argc >= 12) {
 		results = argv[11];
+	}
+
+	if(img_1_seq != img_2_seq) {
+		cout << "Error: sequence codes do not match.\n";
+		return -1;
 	}
 
 	if(verbose) {
@@ -290,14 +288,13 @@ int main(int argc, char *argv[]) {
 	}
 	else {
 		ofstream f;
-		f.open(results + "eval_" + img_1_name + "_to_" + img_2_name + ".txt");
+		f.open(results + img_1_seq + "_stat_" + img_1_num + "_" + img_2_num + ".txt");
 		f << "Descriptor:                          " << desc_name              << "\n";
 		f << "Image 1:                             " << argv[3]                << "\n";
 		f << "Image 2:                             " << argv[6]                << "\n";
 		f << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
 		f                                                                      << "\n";
 		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
-//		f << "Number of Valid Projected Keypoints: " << kp_inbound.size()      << "\n";
 		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
 		f << "Number of Matches:                   " << good_matches.size()    << "\n";
 		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";
@@ -329,108 +326,10 @@ int main(int argc, char *argv[]) {
 		Mat res;
 		drawMatches(img_1, kp_vec_1, img_2, kp_vec_2, display_matches, res, Scalar::all(-1), Scalar::all(-1),
 				vector< char >(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imwrite(results + "disp_" + img_1_name + "_to_" + img_2_name + ".png", res);
+		imwrite(results + img_1_seq + "_draw_" + img_1_num + "_" + img_2_num + ".png", res);
 	}
 
 	return 0;
-}
-
-// TODO: make a better type-adapatable version
-Mat parse_file(string fname, char delimiter, int type) {
-	ifstream inputfile(fname);
-	string current_line;
-
-	if(type != CV_8U && type != CV_32F) {
-		cout << "Error: invalid type passed to parse_file. Default float assumed.\n";
-		type = CV_32F;
-	}
-
-	if(type == CV_32F) {
-		vector< vector<float> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<float> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atof(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_32F);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<float>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-	else { // CV_8U
-		vector< vector<uint8_t> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<uint8_t> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atoi(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_8U);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<uint8_t>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
-	}
-}
-
-int get_dist_metric(string metric) {
-	if(metric == "L2") {
-		return NORM_L2;
-	}
-	else if(metric == "L1") {
-		return NORM_L1;
-	}
-	else if(metric == "HAMMING") {
-		return NORM_HAMMING;
-	}
-	else if(metric == "HAMMING2") {
-		return NORM_HAMMING2;
-	}
-	else { // default
-		return NORM_L2;
-	}
-}
-
-bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold) {
-	Mat hom_coord_vec = Mat::ones(3, 1, CV_32FC1);
-	hom_coord_vec.at<float>(0) = kp_1.pt.x;
-	hom_coord_vec.at<float>(1) = kp_1.pt.y;
-	Mat proj_kp_1_2 =  hom * hom_coord_vec;
-	proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
-	float dist = sqrt(pow(kp_2.pt.x - proj_kp_1_2.at<float>(0), 2) + pow(kp_2.pt.y - proj_kp_1_2.at<float>(1), 2));
-	return dist < threshold;
 }
 
 //Mat get_affine_transformation(int x, int y, int scale_factor, Mat hom) {
