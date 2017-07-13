@@ -55,7 +55,7 @@ The evaluation folder contains the source code for distance threshold computatio
 
 ### results
 
-The results folder contains all of the descriptors and keypoints extracted from images, in addition to all of the results for the various tests performed in the study. The structure of the `results` folder is similar to the `datasets folder, except that each dataset is stored in a folder for the descriptor for which it was computed. Keypoint and descriptor files have a similar name convention to images, except that descriptors end in `_ds.csv` and keypoint files end in `_kp.csv`.
+The results folder contains all of the descriptors and keypoints extracted from images, in addition to all of the results for the various tests performed in the study. The structure of the `results` folder is similar to the `datasets` folder, except that each dataset is stored in a folder for the descriptor for which it was computed. Keypoint and descriptor files have a similar name convention to images, except that descriptors end in `_ds.csv` and keypoint files end in `_kp.csv`.
 
 The descriptor executables referenced above will, in addition to keypoint and descriptor files, generate a `timeresults.txt` file within the corresponding image dataset folder, which will record the amount of time it took to process all of the descriptors.
 
