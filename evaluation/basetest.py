@@ -30,6 +30,7 @@ def generate_results(sf):
 
     img1_path = os.path.join(image_sf_path, images[0])
     img1_base_name, _ = os.path.splitext(images[0])
+    img_seq = images[0].split("_")[0] + "_" + images[0].split("_")[1]
     desc1_path = os.path.join(results_sf_path, img1_base_name + "_ds.csv")
     kp1_path = os.path.join(results_sf_path, img1_base_name + "_kp.csv")
 
@@ -44,9 +45,11 @@ def generate_results(sf):
         desc2_path = os.path.join(results_sf_path, current_ds)
         kp2_path = os.path.join(results_sf_path, current_kp)
         hom_path = os.path.join(image_sf_path, current_hom)
+        stat_results_file = os.path.join(results_sf_path, img_seq + "_stat_001" + "_" + '{0:03d}'.format(img_num) + ".txt")
+        draw_results_file = os.path.join(results_sf_path, img_seq + "_draw_001" + "_" + '{0:03d}'.format(img_num) + ".png")
 
         args = [BASE_TEST_BUILD, PARAMETERS_FILE_PATH, desc_name, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
-                kp2_path, hom_path, distance, results_sf_path + os.sep]
+                kp2_path, hom_path, distance, stat_results_file, draw_results_file]
 
         print(desc_name + ": " + database + " - " + sf + ": " + images[0] + " to " + current_img)
         subprocess.run(args)

@@ -39,7 +39,7 @@ def generate_descriptors(desc, db):
     subprocess.run(args)
 
 def generate_results(sf):
-    global map, success_rate, num_queries, query_sample_size
+    global map, success_rate, num_queries, query_sample_size, file_output
     results_sf_path = os.path.join(results_path, sf)
     expand_results_sf = os.listdir(results_sf_path)
 
@@ -57,17 +57,15 @@ def generate_results(sf):
     for query_ds in query_descriptors:
         query_ds_path = os.path.join(results_sf_path, query_ds)
 
-        args = [APP_TEST_BUILD, PARAMETERS_FILE_PATH, desc_name, dist_threshold, distance, query_ds_path, results_path, "0"]
+        args = [APP_TEST_BUILD, PARAMETERS_FILE_PATH, desc_name, dist_threshold, distance, query_ds_path,
+                results_path, "0", file_output]
 
-        print(desc_name + ": " + database + ": query " + query_ds)
+        print(desc_name + ": " + database + " - query " + query_ds)
+        sys.stdout.flush()
 
-        cp = subprocess.run(args, stdout=subprocess.PIPE, encoding="utf-8")
-        output = cp.stdout.split(" ")
-        map += float(output[0])
-        success_rate += float(output[1])
-        num_queries += 1
-
-
+        # cp = subprocess.run(args, stdout=subprocess.PIPE, encoding="utf-8")
+        # output = cp.stdout.split(" ")
+        subprocess.run(args)
 
 ####### MAIN #######
 
@@ -148,11 +146,24 @@ if __name__ == "__main__":
         image_path = new_db_path
         results_path = os.path.join(RESULTS_PATH, desc_name, new_db)
 
+    file_output = os.path.join(results_path, desc_name + "_" + database[0:3] + "_imageretrieval.csv")
     subfolders = os.listdir(results_path)
 
     for sf in subfolders:
         if os.path.isdir(os.path.join(results_path, sf)) and sf != "clutter":
             generate_results(sf)
+
+    with open(file_output) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split(",")
+            ave_precision = float(line_split[1])
+            success = int(line_split[2])
+            map += ave_precision
+            success_rate += success
+            num_queries += 1
+
+            line = f.readline()
 
     map /= num_queries
     success_rate /= num_queries

@@ -5,7 +5,7 @@
  *      Author: austin
  */
 
-#include "utils.hpp"
+#include <utils.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
@@ -21,13 +21,13 @@ string get_cat(string desc_fname);
 
 int main(int argc, char *argv[]) {
 	Mat query_desc, database_desc;
-	string desc_name, db_path, query_cat;
+	string desc_name, db_path, query_cat, results = "";
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, fixed_dist_thresh = INFINITY;
 	int dist_metric, verbose_output = 0;
 
 	if(argc < 8) {
-		cout << "Usage ./imageretrieval parameters_file desc_name dist_threshold dist_metric query_descs desc_database verbose_output\n";
+		cout << "Usage ./imageretrieval parameters_file desc_name dist_threshold dist_metric query_descs desc_database verbose_output [results_file]\n";
 		return -1;
 	}
 
@@ -52,15 +52,22 @@ int main(int argc, char *argv[]) {
 	}
 	dist_metric = get_dist_metric(argv[4]);
 
-	query_desc = parse_file(argv[5], ',', CV_8U);
 	string query_path = argv[5];
-	query_cat = get_cat(argv[5]);
+	query_desc = parse_file(query_path, ',', CV_8U);
+	query_cat = get_cat(query_path);
+	vector<string> query_path_split;
+	boost::split(query_path_split, query_path, boost::is_any_of("/"));
+	string query_name = query_path_split.back();
 
 	// Extract all descriptors from database
 	vector<string> desc_vec;
 	db_path = argv[6];
 
 	verbose_output = atoi(argv[7]);
+
+	if(argc >= 9) {
+		results = argv[8];
+	}
 
 	if(is_directory(db_path)) {
 		vector<string> db_subdirs;
@@ -143,21 +150,30 @@ int main(int argc, char *argv[]) {
 	ave_precision /= num_rel_imgs;
 
 	// Export metrics
-	if(verbose_output) {
-		cout << desc_name << " descriptor results:\n";
-		cout << "-----------------------"                                  << "\n";
-		cout << "Average precision: " << ave_precision                     << "\n";
-		cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
-		cout                                                               << "\n";
-		for(int ord = 1; ord <= ind.size(); ord++) {
-			int i = ind[ord - 1];
-			cout << setw(5) << right << rank[ord - 1] << " ";
-			cout << setw(5) << right << num_corr[i] << " ";
-			cout << desc_vec[i] << "\n";
+	if(results == "") {
+		if(verbose_output) {
+			cout << desc_name << " descriptor results:\n";
+			cout << "-----------------------"                                  << "\n";
+			cout << "Average precision: " << ave_precision                     << "\n";
+			cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
+			cout                                                               << "\n";
+			for(int ord = 1; ord <= ind.size(); ord++) {
+				int i = ind[ord - 1];
+				cout << setw(5) << right << rank[ord - 1] << " ";
+				cout << setw(5) << right << num_corr[i] << " ";
+				cout << desc_vec[i] << "\n";
+			}
+		}
+		else { // print bare-minimum statistics; easier for Python interface code to read
+			cout << ave_precision << " " << (is_first_img_rel ? 1 : 0);
 		}
 	}
-	else { // print bare-minimum statistics; easier for Python interface code to read
-		cout << ave_precision << " " << (is_first_img_rel ? 1 : 0);
+	else {
+		std::ofstream f;
+
+		f.open(results, std::ofstream::out | std::ofstream::app);
+		f << query_name << "," << ave_precision << "," << (is_first_img_rel ? 1 : 0) << "\n";
+		f.close();
 	}
 
 	return 0;

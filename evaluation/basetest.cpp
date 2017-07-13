@@ -20,13 +20,13 @@ using namespace std::chrono;
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string dist_metric, desc_name, results = "", img_1_num, img_1_seq, img_2_num, img_2_seq;
+	string dist_metric, desc_name, draw_results = "", stat_results = "", img_1_num, img_1_seq, img_2_num, img_2_seq;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
 	int nb_kp_to_display = 50, cap_correct_displayed = 1, verbose = 0;
 
 	if(argc < 11) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [results]\n";
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [stat_results] [draw_results]\n";
 		return -1;
 	}
 
@@ -119,7 +119,10 @@ int main(int argc, char *argv[]) {
 	dist_metric = argv[10];
 
 	if(argc >= 12) {
-		results = argv[11];
+		stat_results = argv[11];
+	}
+	if(argc >= 13) {
+		draw_results = argv[12];
 	}
 
 	if(img_1_seq != img_2_seq) {
@@ -278,7 +281,7 @@ int main(int argc, char *argv[]) {
 	int descriptor_size = desc_1.cols * desc_1.elemSize1();
 
 	// Export metrics
-	if(results == "") { // no directory specified for exporting results; print to console
+	if(stat_results == "") { // no directory specified for exporting results; print to console
 		cout << desc_name << " descriptor results:\n";
 		cout << "-----------------------\n";
 		cout << "Match ratio: " << match_ratio << "\n";
@@ -288,7 +291,7 @@ int main(int argc, char *argv[]) {
 	}
 	else {
 		ofstream f;
-		f.open(results + img_1_seq + "_stat_" + img_1_num + "_" + img_2_num + ".txt");
+		f.open(stat_results);
 		f << "Descriptor:                          " << desc_name              << "\n";
 		f << "Image 1:                             " << argv[3]                << "\n";
 		f << "Image 2:                             " << argv[6]                << "\n";
@@ -322,11 +325,11 @@ int main(int argc, char *argv[]) {
 	vector< DMatch > display_matches(first, last);;
 
 	// Draw matches
-	if(results != "") {
+	if(draw_results != "") {
 		Mat res;
 		drawMatches(img_1, kp_vec_1, img_2, kp_vec_2, display_matches, res, Scalar::all(-1), Scalar::all(-1),
 				vector< char >(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		imwrite(results + img_1_seq + "_draw_" + img_1_num + "_" + img_2_num + ".png", res);
+		imwrite(draw_results, res);
 	}
 
 	return 0;
