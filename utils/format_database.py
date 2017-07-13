@@ -32,7 +32,7 @@ if __name__ == "__main__":
         if os.path.isdir(os.path.join(db_path, sdir)):
             if preprocessing:
                 sdir_rename = sdir[4:] # preprocessing step, if necessary; modify this line
-                os.rename(os.path.join(db_path, sdir), os.path.join(db_path, sdir_new))
+                os.rename(os.path.join(db_path, sdir), os.path.join(db_path, sdir_rename))
                 sdir = sdir_rename
 
             sdir_num_fmt = "{0:03d}".format(sdir_num)
