@@ -40,13 +40,34 @@ Each dataset should be stored in a separate directory within the `datasets` fold
   - mik_007_ubc
   - mik_008_wall
 
-where
-- "database" is the name of the database, and "dat" is the first three letters of the database
-- "sequence" is the name of the image sequence, and "nnn" is a three-digit integer (padded with zeros) associated with each image sequence
-- "iii" is the three-digit integer (padded with zeros) associated with each image
-- The "ds" suffix marks csv files which contain descriptors for the named image
-- The "kp" suffix marks csv files which contain keypoints for the named image
+The `format_database.py` Python utility has been provided to quickly format datasets into the above form. An example usage is shown here:
+```
+python format_database.py path_to_database
+```
 
-### Extracting Descriptors
+### descriptors
 
-The `build_database.py` Python file has been provided to allow for easily extracting keypoints and descriptors for a given local visual descriptor. (to be continued)
+`descriptors` contains two types of files. The first are C++ source files for each of the local visual descriptors, which when executed produce .csv files for the extracted keypoints and descriptors. Each is labeled with its descriptor name (e.g. sift.cpp, latch.cpp, etc.). The other files are .txt files which store values for the parameters of hthe descriptors (such as the number of keypoints to produce). These files allow for easy modification of descriptor parameters without requiring one to rebuild the source code each time. All parameter files in this repository associate a keyword with a value using the `=` delimeter.
+
+### evaluation
+
+The evaluation folder contains the source code for distance threshold computation, the base test, and the application test (image retrieval). Each has a C++ source file and a Python script. The C++ files are useful for small-scale testing, as they take direct inputs for all of the file inputs and so are easy to run independent of any directory structure. Most of the C++ files are designed to run on a single instance of the test, such as a single pair of images for the base test. The Python files assume that the directory structure matches that described here and makes it easy to run the C++ executables on an entire database of images and generate the appropriate arguments. It is recommended to use these for any large scale descriptor testing, as it will make it more efficient to generate the results.
+
+### results
+
+The results folder contains all of the descriptors and keypoints extracted from images, in addition to all of the results for the various tests performed in the study. The structure of the `results` folder is similar to the `datasets folder, except that each dataset is stored in a folder for the descriptor for which it was computed. Keypoint and descriptor files have a similar name convention to images, except that descriptors end in `_ds.csv` and keypoint files end in `_kp.csv`.
+
+The descriptor executables referenced above will, in addition to keypoint and descriptor files, generate a `timeresults.txt` file within the corresponding image dataset folder, which will record the amount of time it took to process all of the descriptors.
+
+The base test will generate two files for each pair of images: a .txt file with the statistics of the test (e.g. precision and recall values), and a .png file with a sample of correct correspondences between the two images. These will be stored in their respective sequence folders, along with the descriptors and keypoints in the test.
+
+The image retrieval test will generate a running .csv file of all of the trials, with the average precision and an indicator for the trial's success for each query. The file is likewise stored directly in the dataset folder for the corresponding descriptor.
+
+Lastly, the data for distances to descriptors is stored directly in the corresponding descriptor folder, including .csv files for all correctly corresponding distances, all correct distances found (positive distances), and all closest non-corresponding distances (negative distances). A graph is also generated which aggregates all of the data into a presentable format.
+
+## How to Run Files
+
+The base test, application test, and distance threshold Python programs are all run by passing the name of the descriptor and database as arguments, in that order, to the programs as command-line arguments. For the distance threshold calculation, an optional argument `-append` can be passed at the end to prevent overwriting of past data collected. An example is shown below:
+```
+python basetest.py sift mikolajczyk
+```

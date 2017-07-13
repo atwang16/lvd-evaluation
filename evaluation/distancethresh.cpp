@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 		int kp_id_2 = good_matches[i][0].trainIdx;
 		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
 			pos_dist.push_back(good_matches[i][0].distance);
-//			neg_dist.push_back(good_matches[i][1].distance);
+			neg_dist.push_back(good_matches[i][1].distance);
 		}
 		else {
 			neg_dist.push_back(good_matches[i][0].distance);
