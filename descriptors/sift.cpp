@@ -28,7 +28,7 @@
 using namespace boost::filesystem;
 using namespace std::chrono;
 
-#define DEFAULT_OUTPUT_DIR "results/"
+#define DEFAULT_OUTPUT_DIR "../results/"
 
 /******************************
  * MODIFY FOR EACH DESCRIPTOR *

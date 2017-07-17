@@ -13,7 +13,7 @@ def generate_descriptors(desc, db):
 
     args = [executable_path, img_database_path + os.sep, RESULTS_PATH + os.sep]
     print(desc_name + ": " + "extracting descriptors from " + db)
-    print("-------------")
+    print("***")
     subprocess.run(args)
 
 ####### MAIN #######
