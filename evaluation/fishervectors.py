@@ -7,12 +7,15 @@ ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 RESULTS_PATH = os.path.join(ROOT_PATH, "results")
 DESC_DB_PATH = os.path.join(ROOT_PATH, "results")
 EXECUTABLE_PATH = os.path.join(ROOT_PATH, "build_fisher", "fishervectors")
-PARAMETERS_PATH = os.path.join(ROOT_PATH, "descriptors", "fisher_parameters.txt")
+PARAMETERS_PATH = os.path.join(ROOT_PATH, "evaluation", "fisher_parameters.txt")
 
 def generate_fisher_vectors(desc_name, db):
     desc_database_path = os.path.join(DESC_DB_PATH, desc_name, db)
+    results_path = os.path.join(RESULTS_PATH, desc_name, db)
+    if not os.path.isdir(results_path):
+        os.makedirs(results_path)
 
-    args = [EXECUTABLE_PATH, PARAMETERS_PATH, desc_database_path + os.sep, RESULTS_PATH + os.sep]
+    args = [EXECUTABLE_PATH, PARAMETERS_PATH, desc_database_path + os.sep, results_path + os.sep]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
@@ -25,6 +28,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     desc_name = sys.argv[1]
+
+    if not os.path.isdir(os.path.join(RESULTS_PATH, desc_name)):
+        os.makedirs(os.path.join(RESULTS_PATH, desc_name))
 
     if len(sys.argv) >= 3:
         database = sys.argv[2]

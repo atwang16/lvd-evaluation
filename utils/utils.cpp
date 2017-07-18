@@ -19,7 +19,7 @@ Mat parse_file(string fname, char delimiter, int type) {
 	string current_line;
 
 	if(type != CV_8U && type != CV_32F) {
-		cout << "Error: invalid type passed to parse_file. Default float assumed.\n";
+		cout << "Error: only CV_8U or CV_32F accepted as arguments to type. Default CV_32F assumed.\n";
 		type = CV_32F;
 	}
 

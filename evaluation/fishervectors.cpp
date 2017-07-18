@@ -12,33 +12,35 @@ extern "C" {
 #include <vl/gmm.h>
 }
 
-#include <iostream>
+#include "utils.hpp"
 #include <cstdlib>
-#include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <ctime>
 
 using namespace std;
 using namespace cv;
 using namespace std::chrono;
 using namespace boost::filesystem;
 
-vector< vector<float> > parse_file(vl_size* num_descs, vl_size* dimension, string fname);
+bool prob(float p);
 bool is_desc(std::string fname);
 bool is_hidden_file(std::string fname);
 string get_cat(string desc_fname);
 
 int main(int argc, char *argv[]) {
-	Mat query_desc, database_desc;
-	string db_path, results = "";
-	vector<KeyPoint> kp_vec_1, kp_vec_2;
+	string desc_name, db_path, results = "";
 	vector<string> desc_vec;
-	vl_size max_em_iterations = 100, num_clusters = 100;
+	vl_size max_em_iterations = 100, num_clusters = 256;
+	int sample_size = 10000, load_dictionary = 0;
+	float *means, *covariances, *priors;
 
-	if(argc < 4) {
-		cout << "Usage ./fishervectors parameters_file desc_database results_folder\n";
-		cout << "      ./fishervectors parameters_file desc_file results_folder\n";
+	srand (time(NULL));
+
+	if(argc < 5) {
+		cout << "Usage ./fishervectors parameters_file desc_database results_folder load_dictionary\n";
+		cout << "      ./fishervectors parameters_file desc_file results_folder load_dictionary\n";
 		return 1;
 	}
 
@@ -57,12 +59,14 @@ int main(int argc, char *argv[]) {
 		else if(var == "NUM_CLUSTERS") {
 			num_clusters = stoi(value);
 		}
+		else if(var == "NUMBER_DESCRIPTORS_TO_SAMPLE") {
+			sample_size = stoi(value);
+		}
 	}
 
-	// Parse database path
 	db_path = argv[2];
-
 	results = argv[3];
+	load_dictionary = stoi(argv[4]);
 
 	if(is_directory(db_path)) {
 		vector<string> db_subdirs;
@@ -88,58 +92,92 @@ int main(int argc, char *argv[]) {
 		desc_vec.push_back(db_path);
 	}
 	else {
-		cout << "Error: not a valid descriptor file. Make sure the naming convention is correct.\n";
+		cout << "Error: " << db_path << " is not a valid database directory or descriptor file. Make sure the naming convention is correct.\n";
 		return 1;
 	}
 
 	// create a new instance of a GMM object for float data
-	float *descs, *enc;
-	vl_size num_descs, dimension;
+	vector< Mat > desc_vec_mat;
+	float *descs, *enc, *d_ptr;
+	vl_size num_descs = 0, dimension = 0;
 
-	// Create fisher vectors
+	// Amalgamate descriptors into one
+	cout << "Loading data...\n";
 	for(int i = 0; i < desc_vec.size(); i++) {
-		std::cout << "Extracting descriptors for " << desc_vec[i] << "\n";
-		vector< vector<float> > vector_data = parse_file(&num_descs, &dimension, desc_vec[i]);
-		descs = (float *)vl_malloc(sizeof(float) * (num_descs * dimension));
+		desc_vec_mat.push_back(parse_file(desc_vec[i], ',', CV_32F));
+		num_descs += desc_vec_mat.back().rows;
+	}
 
-		// Place data in OpenCV matrix
-		for(int des = 0; des < num_descs; des++) {
-		   for(int dim = 0; dim < dimension; dim++) {
-			   descs[des*dimension + dim] = vector_data[des][dim];
-		   }
+	cout << num_descs << " descriptors loaded.\n";
+
+	if(!load_dictionary) {
+		dimension = desc_vec_mat.back().cols;
+		descs = (float *)vl_malloc(sizeof(float) * (sample_size * dimension));
+		d_ptr = descs;
+		int descs_remaining = num_descs, to_sample = sample_size;
+		for(int i = 0; to_sample > 0 && i < desc_vec_mat.size(); i++) {
+			Mat m = desc_vec_mat[i];
+			for(int j = 0; to_sample > 0 && j < m.rows; j++) {
+				if(prob(to_sample / descs_remaining)) {
+					memcpy(d_ptr, m.row(j).data, dimension * sizeof(float));
+					d_ptr += dimension;
+					to_sample--;
+				}
+				descs_remaining--;
+			}
 		}
 
+		cout << sample_size << " descriptors sampled.\n";
+
+		// Create visual dictionary
+		cout << "Constructing visual dictionary...\n";
 		VlGMM* gmm = vl_gmm_new(VL_TYPE_FLOAT, dimension, num_clusters);
 		vl_gmm_set_max_num_iterations(gmm, max_em_iterations);
 		// set the initialization to random selection
 		vl_gmm_set_initialization(gmm, VlGMMRand);
 		// cluster the data, i.e. learn the GMM
-		vl_gmm_cluster(gmm, descs, num_descs);
+		vl_gmm_cluster(gmm, descs, sample_size);
+
+		means = (float *)vl_gmm_get_means(gmm);
+		covariances = (float *)vl_gmm_get_covariances(gmm);
+		priors = (float *)vl_gmm_get_priors(gmm);
+	}
+
+	cout << "***\n";
+
+	// Create fisher vectors
+	for(int i = 0; i < desc_vec.size(); i++) {
+		std::cout << "Extracting fisher vectors for " << desc_vec[i] << "\n";
+
 		// allocate space for the encoding
 		enc = (float *)vl_malloc(sizeof(float) * 2 * dimension * num_clusters);
 		// run fisher encoding
-		vl_fisher_encode(enc, VL_TYPE_FLOAT, vl_gmm_get_means(gmm), dimension, num_clusters,
-				vl_gmm_get_covariances(gmm), vl_gmm_get_priors(gmm), descs, num_descs, VL_FISHER_FLAG_IMPROVED);
+		vl_fisher_encode(enc, VL_TYPE_FLOAT, (const void *)means, dimension, num_clusters, (const void *)covariances,
+				(const void *)priors, desc_vec_mat[i].data, desc_vec_mat[i].rows, VL_FISHER_FLAG_IMPROVED);
 
 		// save Fisher vector encoding
 		vector<string> fname_split;
 		boost::split(fname_split, desc_vec[i], boost::is_any_of("/,."));
 		string img_name = fname_split[fname_split.size() - 2].substr(0, 11);
-		string seq_name = is_directory(db_path) ? fname_split[fname_split.size() - 3] : "";
-		string output_name = results + seq_name + "/" + img_name + "_fv.csv";
+		string seq_name = is_directory(db_path) ? (fname_split[fname_split.size() - 3] + "/") : "";
+		string output_name = results + seq_name + img_name + "_fv.csv";
 		std::ofstream f;
 		f.open(output_name);
 		for(int i = 0; i < 2 * dimension * num_clusters; i++) {
 			f << enc[i] << "\n";
 		}
 		f.close();
-		std::cout << "Fisher vector stored at " << output_name << "\n";
+		std::cout << "Fisher vector stored at " << output_name << "\n\n";
 
-		vl_free(descs);
 		vl_free(enc);
 	}
+	vl_free(descs);
 
 	return 0;
+}
+
+bool prob(float p) {
+	return p > 0.0 && (p >= 1.0 || rand() < p * RAND_MAX);
 }
 
 bool is_hidden_file(string fname) {
