@@ -51,8 +51,10 @@ def generate_descriptors(desc, db):
 def generate_fisher_vectors(desc, db):
     desc_database_path = os.path.join(RESULTS_PATH, desc, db)
     results_path = os.path.join(RESULTS_PATH, desc, db)
+    dictionary_path = os.path.join(RESULTS_PATH, desc, desc + "_visual_dictionary.csv")
 
-    args = [FISHER_VECTOR_EXECUTABLE, FISHER_PARAMETERS_FILE, desc_database_path + os.sep, results_path + os.sep]
+    args = [FISHER_VECTOR_EXECUTABLE, FISHER_PARAMETERS_FILE, desc_database_path + os.sep,
+            results_path + os.sep, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
@@ -81,9 +83,6 @@ def generate_results(subfolder):
 
         print(desc_name + ": " + database + " - query " + query_fv)
         sys.stdout.flush()
-
-        # cp = subprocess.run(args, stdout=subprocess.PIPE, encoding="utf-8")
-        # output = cp.stdout.split(" ")
         subprocess.run(args)
 
 

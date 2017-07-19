@@ -29,18 +29,21 @@ bool is_desc(std::string fname);
 bool is_hidden_file(std::string fname);
 string get_cat(string desc_fname);
 
+enum data {MEANS, COVARIANCES, PRIORS, END};
+
 int main(int argc, char *argv[]) {
-	string desc_name, db_path, results = "";
+	string desc_name, db_path, results = "", dictionary = "";
 	vector<string> desc_vec;
 	vl_size max_em_iterations = 100, num_clusters = 256;
-	int sample_size = 10000, load_dictionary = 0;
+	int sample_size = 10000;
 	float *means, *covariances, *priors;
+	vector<float> means_vec, covariances_vec, priors_vec;
 
 	srand (time(NULL));
 
-	if(argc < 5) {
-		cout << "Usage ./fishervectors parameters_file desc_database results_folder load_dictionary\n";
-		cout << "      ./fishervectors parameters_file desc_file results_folder load_dictionary\n";
+	if(argc < 4) {
+		cout << "Usage ./fishervectors parameters_file desc_database results_folder [load_dictionary]\n";
+		cout << "      ./fishervectors parameters_file desc_file results_folder [load_dictionary]\n";
 		return 1;
 	}
 
@@ -66,7 +69,9 @@ int main(int argc, char *argv[]) {
 
 	db_path = argv[2];
 	results = argv[3];
-	load_dictionary = stoi(argv[4]);
+	if(argc >= 5) {
+		dictionary = argv[4];
+	}
 
 	if(is_directory(db_path)) {
 		vector<string> db_subdirs;
@@ -110,8 +115,9 @@ int main(int argc, char *argv[]) {
 
 	cout << num_descs << " descriptors loaded.\n";
 
-	if(!load_dictionary) {
-		dimension = desc_vec_mat.back().cols;
+	dimension = desc_vec_mat.back().cols;
+
+	if(dictionary == "" || !exists(dictionary)) { // no dictionary provided
 		descs = (float *)vl_malloc(sizeof(float) * (sample_size * dimension));
 		d_ptr = descs;
 		int descs_remaining = num_descs, to_sample = sample_size;
@@ -141,16 +147,90 @@ int main(int argc, char *argv[]) {
 		means = (float *)vl_gmm_get_means(gmm);
 		covariances = (float *)vl_gmm_get_covariances(gmm);
 		priors = (float *)vl_gmm_get_priors(gmm);
+
+		// store in dictionary
+		if(dictionary != "") {
+			std::ofstream f;
+			f.open(dictionary);
+
+			for(int i = 0; i < dimension * num_clusters; i++) {
+				f << means[i] << ",";
+			}
+			f << "\n";
+
+			for(int i = 0; i < dimension * num_clusters; i++) {
+				f << covariances[i] << ",";
+			}
+			f << "\n";
+
+			for(int i = 0; i < num_clusters; i++) {
+				f << priors[i] << ",";
+			}
+			f << "\n";
+
+			f.close();
+		}
+		vl_free(descs);
+	}
+	else { // load from dictionary
+		std::ifstream inputfile(dictionary);
+		string current_line;
+		int index = 0;
+
+		cout << "Loading visual dictionary from file...\n";
+
+		// read means
+		while(getline(inputfile, current_line) && index < END) {
+			if(current_line != "") {
+				stringstream str_stream(current_line);
+				string single_value;
+
+				// Read each value with delimiter
+				while(getline(str_stream, single_value, ',')) {
+					if(single_value != "") {
+						switch(index) {
+						case MEANS:
+							means_vec.push_back(stof(single_value));
+							break;
+
+						case COVARIANCES:
+							covariances_vec.push_back(stof(single_value));
+							break;
+
+						case PRIORS:
+							priors_vec.push_back(stof(single_value));
+							break;
+
+						default:
+							break;
+						}
+					}
+				}
+			}
+			index++;
+		}
+		if(means_vec.size() != dimension * num_clusters || covariances_vec.size() != dimension * num_clusters
+				|| priors_vec.size() != num_clusters || index < END) {
+			cout << "Error: insufficient amount of data stored in dictionary. Aborting...\n";
+			return 1;
+		}
+
+		means = (float *)means_vec.data();
+		covariances = (float *)covariances_vec.data();
+		priors = (float *)priors_vec.data();
+
+		inputfile.close();
 	}
 
 	cout << "***\n";
 
 	// Create fisher vectors
+	vl_size enc_size = 2 * dimension * num_clusters;
 	for(int i = 0; i < desc_vec.size(); i++) {
 		std::cout << "Extracting fisher vectors for " << desc_vec[i] << "\n";
 
 		// allocate space for the encoding
-		enc = (float *)vl_malloc(sizeof(float) * 2 * dimension * num_clusters);
+		enc = (float *)vl_malloc(sizeof(float) * enc_size);
 		// run fisher encoding
 		vl_fisher_encode(enc, VL_TYPE_FLOAT, (const void *)means, dimension, num_clusters, (const void *)covariances,
 				(const void *)priors, desc_vec_mat[i].data, desc_vec_mat[i].rows, VL_FISHER_FLAG_IMPROVED);
@@ -163,7 +243,7 @@ int main(int argc, char *argv[]) {
 		string output_name = results + seq_name + img_name + "_fv.csv";
 		std::ofstream f;
 		f.open(output_name);
-		for(int i = 0; i < 2 * dimension * num_clusters; i++) {
+		for(int i = 0; i < enc_size; i++) {
 			f << enc[i] << "\n";
 		}
 		f.close();
@@ -171,7 +251,6 @@ int main(int argc, char *argv[]) {
 
 		vl_free(enc);
 	}
-	vl_free(descs);
 
 	return 0;
 }

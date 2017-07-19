@@ -12,10 +12,12 @@ PARAMETERS_PATH = os.path.join(ROOT_PATH, "evaluation", "fisher_parameters.txt")
 def generate_fisher_vectors(desc_name, db):
     desc_database_path = os.path.join(DESC_DB_PATH, desc_name, db)
     results_path = os.path.join(RESULTS_PATH, desc_name, db)
+    dictionary_path = os.path.join(RESULTS_PATH, desc_name, desc_name + "_visual_dictionary.csv")
+
     if not os.path.isdir(results_path):
         os.makedirs(results_path)
 
-    args = [EXECUTABLE_PATH, PARAMETERS_PATH, desc_database_path + os.sep, results_path + os.sep]
+    args = [EXECUTABLE_PATH, PARAMETERS_PATH, desc_database_path + os.sep, results_path + os.sep, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
