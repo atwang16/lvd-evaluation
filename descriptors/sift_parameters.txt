@@ -1,7 +1,7 @@
-distance=L2
-nfeatures=0
-nOctaveLayers=3
-contrastThreshold=0.04
-edgeThreshold=10
-sigma=1.6
-distancethreshold=250
+DISTANCE=L2
+N_FEATURES=0
+N_OCTAVE_LAYERS=3
+CONTRAST_THRESHOLD=0.04
+EDGE_THRESHOLD=10
+SIGMA=1.6
+DISTANCE_THRESHOLD=250

@@ -1,8 +1,8 @@
-distance=HAMMING
-maxSize = 45
-responseThreshold=30
-lineThresholdProjected=10
-lineThresholdBinarized=8
-suppressNonmaxSize=5
-bytes=32
-use_orientation=false
+DISTANCE=HAMMING
+MAX_SIZE = 45
+RESPONSE_THRESHOLD=30
+LINE_THRESHOLD_PROJECTED=10
+LINE_THRESHOLD_BINARIZED=8
+SUPPRESS_NONMAX_SIZE=5
+BYTES=32
+USE_ORIENTATION=false

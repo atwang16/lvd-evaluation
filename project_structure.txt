@@ -1,0 +1,13 @@
+DATASETS_FOLDER=datasets
+DESCRIPTORS_FOLDER=descriptors
+RESULTS_FOLDER=results
+EVALUATION_FOLDER=evaluation
+BASETEST_EXECUTABLE=build_basetest/basetest
+APPTEST_EXECUTABLE=build_apptest/imageretrieval
+APPTEST2_EXECUTABLE=build_apptest2/imageretrieval2
+DISTTHRESH_EXECUTABLE=build_distthresh/distthresh
+FISHER_VECTOR_EXECUTABLE=build_fisher/fishervectors
+AKAZE_EXECUTABLE=build_ds_akaze/akaze
+BRIEF_EXECUTABLE=build_ds_brief/brief
+LATCH_EXECUTABLE=build_ds_latch/latch
+SIFT_EXECUTABLE=build_ds_sift/sift

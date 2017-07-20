@@ -3,23 +3,25 @@ import sys
 import os.path
 import os
 from random import sample
-from shutil import copyfile
+from shutil import copyfile, rmtree
 
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-RESULTS_PATH = os.path.join(ROOT_PATH, "results")
-IMG_DB_PATH = os.path.join(ROOT_PATH, "datasets")
-APP_TEST_BUILD = os.path.join(ROOT_PATH, "build_apptest2", "imageretrieval2")
-PARAMETERS_FILE_PATH = os.path.join(ROOT_PATH, "evaluation", "parameters.txt")
-FISHER_PARAMETERS_FILE = os.path.join(ROOT_PATH, "evaluation", "fisher_parameters.txt")
-FISHER_VECTOR_EXECUTABLE = os.path.join(ROOT_PATH, "build_fisher", "fishervectors")
+results_path = None
+image_db_path = None
+apptest2_executable = None
+descriptor_executable = None
+fisher_vector_executable = None
+PARAMETERS_FILE = os.path.join(os.getcwd(), "parameters.txt")
+FISHER_PARAMETERS_FILE = os.path.join(os.getcwd(), "fisher_parameters.txt")
 IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
-seq_size = 30
+
+subset_seq_size = 30
 query_sample_size = 5
 generate_subset = False
 generate_descs = False
 generate_fishers = False
-mean_ave_prec = 0
-success_rate = 0
+mean_ave_prec = 0.0
+success_rate = 0.0
 num_queries = 0
 
 
@@ -39,30 +41,31 @@ def is_fisher(fname):
 
 
 def generate_descriptors(desc, db):
-    img_database_path = os.path.join(IMG_DB_PATH, db)
-    executable_path = os.path.join(ROOT_PATH, "build_ds_" + desc, desc)
+    global descriptor_executable, image_db_path, results_path
 
-    args = [executable_path, img_database_path + os.sep, RESULTS_PATH + os.sep]
-    print(desc_name + ": " + "extracting descriptors from " + db)
+    args = [descriptor_executable, image_db_path + os.sep, results_path + os.sep]
+    print(desc + ": " + "extracting descriptors from " + db)
     print("***")
     subprocess.run(args)
 
 
 def generate_fisher_vectors(desc, db):
-    desc_database_path = os.path.join(RESULTS_PATH, desc, db)
-    results_path = os.path.join(RESULTS_PATH, desc, db)
-    dictionary_path = os.path.join(RESULTS_PATH, desc, desc + "_visual_dictionary.csv")
+    global fisher_vector_executable, results_path
+    desc_database_path = os.path.join(results_path, desc, db)
+    results_db_path = desc_database_path
+    dictionary_path = os.path.join(results_path, desc, desc + "_visual_dictionary.csv")
 
-    args = [FISHER_VECTOR_EXECUTABLE, FISHER_PARAMETERS_FILE, desc_database_path + os.sep,
-            results_path + os.sep, dictionary_path]
+    args = [fisher_vector_executable, FISHER_PARAMETERS_FILE, desc_database_path + os.sep,
+            results_db_path + os.sep, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
 
 
 def generate_results(subfolder):
+    global apptest2_executable
     global mean_ave_prec, success_rate, num_queries, query_sample_size, file_output
-    results_sf_path = os.path.join(results_path, subfolder)
+    results_sf_path = os.path.join(results_db_path, subfolder)
     expand_results_sf = os.listdir(results_sf_path)
 
     fisher_vectors = []
@@ -79,7 +82,7 @@ def generate_results(subfolder):
     for query_fv in query_fisher_vectors:
         query_fv_path = os.path.join(results_sf_path, query_fv)
 
-        args = [APP_TEST_BUILD, desc_name, query_fv_path, results_path, "0", file_output]
+        args = [apptest2_executable, desc_name, query_fv_path, results_db_path, "0", file_output]
 
         print(desc_name + ": " + database + " - query " + query_fv)
         sys.stdout.flush()
@@ -96,6 +99,27 @@ if __name__ == "__main__":
 
     desc_name = sys.argv[1]
     database = sys.argv[2]
+
+    with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split("=")
+            var = line_split[0]
+            directory = line_split[-1]
+            if(directory[-1] == "\n"):
+                directory = directory[:-1]
+            if var == "RESULTS_FOLDER":
+                results_path = os.path.join(ROOT_PATH, directory)
+            elif var == "DATASETS_FOLDER":
+                image_db_path = os.path.join(ROOT_PATH, directory, database)
+            elif var == "APPTEST2_BUILD_FOLDER":
+                apptest2_executable = os.path.join(ROOT_PATH, directory)
+            elif var == "FISHER_VECTOR_EXECUTABLE":
+                fisher_vector_executable = os.path.join(ROOT_PATH, directory)
+            elif var == desc_name.upper() + "_EXECUTABLE":
+                descriptor_executable = os.path.join(ROOT_PATH, directory)
+            line = f.readline()
+
     arg_index = 3
     while arg_index < len(sys.argv):
         if sys.argv[arg_index] == "-generate_subset":
@@ -108,10 +132,9 @@ if __name__ == "__main__":
         elif sys.argv[arg_index] == "-generate_fishervectors":
             generate_fishers = True
         arg_index += 1
-    image_path = os.path.join(IMG_DB_PATH, database)
-    results_path = os.path.join(RESULTS_PATH, desc_name, database)
+    results_db_path = os.path.join(results_path, desc_name, database)
 
-    with open(PARAMETERS_FILE_PATH) as f:
+    with open(PARAMETERS_FILE) as f:
         line = f.readline()
         while line != "":
             line_split = line.split("=")
@@ -121,7 +144,7 @@ if __name__ == "__main__":
                 value = value[:-1]
 
             if var == "SEQUENCE_SIZE":
-                seq_size = int(value)
+                subset_seq_size = int(value)
             elif var == "QUERY_SAMPLE_SIZE":
                 query_sample_size = int(value)
             line = f.readline()
@@ -129,47 +152,50 @@ if __name__ == "__main__":
     # generate subset of desired database
     if generate_subset:
         database += "_subset"
-        new_db_path = os.path.join(IMG_DB_PATH, database)
-        if not os.path.isdir(new_db_path):
-            os.mkdir(new_db_path)
+        new_img_db_path = os.path.join(image_db_path, os.pardir(), database)
+        if os.path.isdir(new_img_db_path):
+            rmtree(new_img_db_path)
 
-            seqs = os.listdir(image_path)
+        os.mkdir(new_img_db_path)
+        db_sequences = os.listdir(image_db_path)
 
-            for sq in seqs:
-                old_sq = os.path.join(image_path, sq)
-                new_sq = os.path.join(new_db_path, sq)
-                if os.path.isdir(old_sq):
-                    os.mkdir(new_sq)
-                    seq_files = os.listdir(old_sq)
-                    seq_images = []
+        for seq in db_sequences:
+            old_seq = os.path.join(image_db_path, seq)
+            new_seq = os.path.join(new_img_db_path, seq)
 
-                    # remove non-images
-                    for f in seq_files:
-                        if is_image(f):
-                            seq_images.append(f)
+            if os.path.isdir(old_seq):
+                os.mkdir(new_seq)
+                seq_files = os.listdir(old_seq)
+                seq_images = []
 
-                    # find subset of images
-                    if seq_size < len(seq_images):
-                        subset_images = set(sample(seq_images, seq_size))
-                    else:
-                        subset_images = seq_images
+                # remove non-images
+                for f in seq_files:
+                    if is_image(f):
+                        seq_images.append(f)
 
-                    for img in subset_images:
-                        copyfile(os.path.join(old_sq, img), os.path.join(new_sq, img))
+                # find subset of images
+                if subset_seq_size < len(seq_images):
+                    subset_images = sample(seq_images, subset_seq_size)
+                else:
+                    subset_images = seq_images
 
-        image_path = new_db_path
-        results_path = os.path.join(RESULTS_PATH, desc_name, database)
+                # copy images to new directory
+                for img in subset_images:
+                    copyfile(os.path.join(old_seq, img), os.path.join(new_seq, img))
+
+        image_db_path = new_img_db_path
+        results_db_path = os.path.join(results_path, desc_name, database)
     if generate_descs:
         generate_descriptors(desc_name, database)
     if generate_fishers:
         generate_fisher_vectors(desc_name, database)
 
-    file_output = os.path.join(results_path, desc_name + "_" + database[0:3] + "_imageretrieval2.csv")
-    subfolders = os.listdir(results_path)
+    file_output = os.path.join(results_db_path, desc_name + "_" + database[0:3] + "_imageretrieval2.csv")
+    result_sequences = os.listdir(results_db_path)
 
-    for sf in subfolders:
-        if os.path.isdir(os.path.join(results_path, sf)) and sf != "clutter":
-            generate_results(sf)
+    for r_seq in result_sequences:
+        if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":
+            generate_results(r_seq)
 
     with open(file_output) as f:
         line = f.readline()
@@ -183,7 +209,7 @@ if __name__ == "__main__":
 
             line = f.readline()
 
-        mean_ave_prec /= num_queries
+    mean_ave_prec /= num_queries
     success_rate /= num_queries
 
     print("Mean Average Precision:", mean_ave_prec)

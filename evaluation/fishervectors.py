@@ -4,25 +4,27 @@ import os.path
 import os
 
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-RESULTS_PATH = os.path.join(ROOT_PATH, "results")
-DESC_DB_PATH = os.path.join(ROOT_PATH, "results")
-EXECUTABLE_PATH = os.path.join(ROOT_PATH, "build_fisher", "fishervectors")
-PARAMETERS_PATH = os.path.join(ROOT_PATH, "evaluation", "fisher_parameters.txt")
+results_path = None
+fisher_vector_executable = None
+PARAMETERS_PATH = os.path.join(os.getcwd(), "fisher_parameters.txt")
+
 
 def generate_fisher_vectors(desc_name, db):
-    desc_database_path = os.path.join(DESC_DB_PATH, desc_name, db)
-    results_path = os.path.join(RESULTS_PATH, desc_name, db)
-    dictionary_path = os.path.join(RESULTS_PATH, desc_name, desc_name + "_visual_dictionary.csv")
+    global fisher_vector_executable, results_path
+    desc_database_path = os.path.join(results_path, desc_name, db)
+    dictionary_path = os.path.join(results_path, desc_name, desc_name + "_visual_dictionary.csv")
 
     if not os.path.isdir(results_path):
         os.makedirs(results_path)
 
-    args = [EXECUTABLE_PATH, PARAMETERS_PATH, desc_database_path + os.sep, results_path + os.sep, dictionary_path]
+    args = [fisher_vector_executable, PARAMETERS_PATH, desc_database_path + os.sep,
+            desc_database_path + os.sep, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
 
-####### MAIN #######
+
+# MAIN #
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -31,15 +33,33 @@ if __name__ == "__main__":
 
     desc_name = sys.argv[1]
 
-    if not os.path.isdir(os.path.join(RESULTS_PATH, desc_name)):
-        os.makedirs(os.path.join(RESULTS_PATH, desc_name))
+    with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split("=")
+            var = line_split[0]
+            directory = line_split[-1]
+            if(directory[-1] == "\n"):
+                directory = directory[:-1]
+            if var == "RESULTS_FOLDER":
+                results_path = os.path.join(ROOT_PATH, directory)
+            elif var == "FISHER_VECTOR_EXECUTABLE":
+                fisher_vector_executable = os.path.join(ROOT_PATH, directory)
+            line = f.readline()
 
+    desc_results_path = os.path.join(results_path, desc_name)
+
+    if not os.path.isdir(desc_results_path):
+        os.makedirs(desc_results_path)
+
+    # Generate fisher vectors for a single database
     if len(sys.argv) >= 3:
         database = sys.argv[2]
         generate_fisher_vectors(desc_name, database)
+    # Generate fisher vectors for all databases
     else:
-        all_databases = os.listdir(DESC_DB_PATH)
+        all_databases = os.listdir(desc_results_path)
 
         for db in all_databases:
-            if os.path.isdir(os.path.join(DESC_DB_PATH, db)):
+            if os.path.isdir(os.path.join(desc_results_path, db)):
                 generate_fisher_vectors(desc_name, db)

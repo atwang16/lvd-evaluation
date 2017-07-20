@@ -3,16 +3,27 @@ import sys
 import os.path
 import os
 
-root_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-datasets_folder = os.path.join(root_folder, "datasets")
-sep = "_"
+ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+datasets_folder = None
 img_extensions = [".jpg", ".png", ".ppm", ".pgm"]
 preprocessing = False
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python imageretrieval.py path_to_database")
+        print("Usage: python imageretrieval.py database")
         sys.exit(1)
+
+    with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
+        line = f.readline()
+        while line != "":
+            line_split = line.split("=")
+            var = line_split[0]
+            dir = line_split[-1]
+            if(dir[-1] == "\n"):
+                dir = dir[:-1]
+            if var == "DATASETS_FOLDER":
+                datasets_folder = os.path.join(ROOT_PATH, dir)
+            line = f.readline()
 
     db_path = sys.argv[1]
     db_name = db_path.split(os.sep)[-1]
@@ -37,7 +48,7 @@ if __name__ == "__main__":
 
             sdir_num_fmt = "{0:03d}".format(sdir_num)
             subdirs_old.append(os.path.join(db_path, sdir))
-            subdirs_new.append(os.path.join(db_path, db_prefix + sep + sdir_num_fmt + sep + sdir))
+            subdirs_new.append(os.path.join(db_path, db_prefix + "_" + sdir_num_fmt + "_" + sdir))
 
             images = sorted(os.listdir(os.path.join(db_path, sdir)))
 
@@ -55,7 +66,7 @@ if __name__ == "__main__":
 
                     img_num_fmt = "{0:03d}".format(img_num)
                     images_old[-1].append(os.path.join(subdirs_new[-1], img))
-                    images_new[-1].append(os.path.join(subdirs_new[-1], db_prefix + sep + sdir_num_fmt + sep + img_num_fmt + img_ext))
+                    images_new[-1].append(os.path.join(subdirs_new[-1], db_prefix + "_" + sdir_num_fmt + "_" + img_num_fmt + img_ext))
                     img_num += 1
             sdir_num += 1
 

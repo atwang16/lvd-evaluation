@@ -1,7 +1,7 @@
-distance=HAMMING
-descriptor_size=0
-descriptor_channels=3
-threshold=0.001
-nOctaves=4
-nOctaveLayers=4
-diffusivity=1
+DISTANCE=HAMMING
+DESCRIPTOR_SIZE=0
+DESCRIPTOR_CHANNELS=3
+THRESHOLD=0.001
+N_OCTAVES=4
+N_OCTAVE_LAYERS=4
+DIFFUSIVITY=1
