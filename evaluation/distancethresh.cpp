@@ -20,7 +20,8 @@ int main(int argc, char *argv[]) {
 	string desc_name, results = "";
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	float dist_ratio_thresh = 0.8f, kp_dist_thresh = 2.5f;
-	int dist_metric, append = 1, verbose = 0;
+	int dist_metric, verbose = 0;
+	uint8_t append = 0x01;
 
 	if(argc < 10) {
 		cout << "Usage ./distances parameters_file desc_name desc_1 keypoint_1 desc2 keypoint2 homography dist_metric append [results]\n";
@@ -93,7 +94,9 @@ int main(int argc, char *argv[]) {
 	homography = parse_file(argv[7], ' ', CV_32F);
 	dist_metric = get_dist_metric(argv[8]);
 
-	append = stoi(argv[9]);
+	if(argv[9][0] == '0') {
+		append = 0x00;
+	}
 
 	if(argc >= 11) {
 		results = argv[10];
@@ -148,19 +151,19 @@ int main(int argc, char *argv[]) {
 	// Save data to csv files
 	ofstream f_pos, f_neg, f_cor;
 
-	f_pos.open(results + desc_name + "_pos_dists.csv", ofstream::out | (ofstream::app * append));
+	f_pos.open(results + desc_name + "_pos_dists.csv", ofstream::out | (ofstream::app & append));
 	for(int i = 0; i < pos_dist.size(); i++) {
 		f_pos << pos_dist[i] << "\n";
 	}
 	f_pos.close();
 
-	f_neg.open(results + desc_name + "_neg_dists.csv", ofstream::out | (ofstream::app * append));
+	f_neg.open(results + desc_name + "_neg_dists.csv", ofstream::out | (ofstream::app & append));
 	for(int i = 0; i < neg_dist.size(); i++) {
 		f_neg << neg_dist[i] << "\n";
 	}
 	f_neg.close();
 
-	f_cor.open(results + desc_name + "_cor_dists.csv", ofstream::out | (ofstream::app * append));
+	f_cor.open(results + desc_name + "_cor_dists.csv", ofstream::out | (ofstream::app & append));
 	for(int i = 0; i < cor_dist.size(); i++) {
 		f_cor << cor_dist[i] << "\n";
 	}
