@@ -34,7 +34,7 @@ def generate_results(desc, sequence):
     img_num = 2
     image_seq_path = os.path.join(image_db_path, sequence)
     results_seq_path = os.path.join(results_db_path, sequence)
-    image_seq_expanded = os.listdir(image_seq_path)
+    image_seq_expanded = sorted(os.listdir(image_seq_path))
 
     images = []
     for file in image_seq_expanded:
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                 distance = value
             line = f.readline()
 
-    db_sequences = os.listdir(results_db_path)
+    db_sequences = sorted(os.listdir(results_db_path))
 
     for seq in db_sequences:
         if os.path.isdir(os.path.join(results_db_path, seq)):
