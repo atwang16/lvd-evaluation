@@ -6,7 +6,7 @@ import os
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 datasets_folder = None
 img_extensions = [".jpg", ".png", ".ppm", ".pgm"]
-preprocessing = False
+preprocessing = True 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -38,16 +38,17 @@ if __name__ == "__main__":
 
     print("The database will be renamed with the following file conventions:")
 
-    subdirs = os.listdir(db_path)
+    subdirs = sorted(os.listdir(db_path))
     sdir_num = 1
     subdirs_old = []
     subdirs_new = []
     images_old = []
     images_new = []
+
     for sdir in subdirs:
         if os.path.isdir(os.path.join(db_path, sdir)):
             if preprocessing:
-                sdir_rename = sdir[4:] # preprocessing step, if necessary; modify this line
+                sdir_rename = sdir # preprocessing step, if necessary; modify this line
                 os.rename(os.path.join(db_path, sdir), os.path.join(db_path, sdir_rename))
                 sdir = sdir_rename
 
@@ -65,7 +66,7 @@ if __name__ == "__main__":
                 img_ext = os.path.splitext(img_path)[1]
                 if img_ext in img_extensions:
                     if preprocessing:
-                        img_rename = img[4:] # preprocessing step, if necessary; modify this line
+                        img_rename = img # preprocessing step, if necessary; modify this line
                         os.rename(os.path.join(db_path, sdir, img), os.path.join(db_path, sdir, img_rename))
                         img = img_rename
 
@@ -73,6 +74,12 @@ if __name__ == "__main__":
                     images_old[-1].append(os.path.join(subdirs_new[-1], img))
                     images_new[-1].append(os.path.join(subdirs_new[-1], db_prefix + "_" + sdir_num_fmt + "_" + img_num_fmt + img_ext))
                     img_num += 1
+                elif img[0] == "H": # homography
+                    if preprocessing:
+                        hom = img
+                        hom_rename = "H" + hom[2] + "to" + hom[4] + "p"
+                        os.rename(os.path.join(db_path, sdir, hom), os.path.join(db_path, sdir, hom_rename))
+                        hom = hom_rename
             sdir_num += 1
 
     for i in range(len(subdirs_new)):
