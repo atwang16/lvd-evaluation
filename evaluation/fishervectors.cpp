@@ -24,6 +24,9 @@ using namespace cv;
 using namespace std::chrono;
 using namespace boost::filesystem;
 
+#define PATH_DELIMITER "/"
+#define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
+
 bool prob(float p);
 bool is_desc(std::string fname);
 bool is_hidden_file(std::string fname);
@@ -237,10 +240,10 @@ int main(int argc, char *argv[]) {
 
 		// save Fisher vector encoding
 		vector<string> fname_split;
-		boost::split(fname_split, desc_vec[i], boost::is_any_of("/,."));
+		boost::split(fname_split, desc_vec[i], boost::is_any_of("/."));
 		string img_name = fname_split[fname_split.size() - 2].substr(0, 11);
-		string seq_name = is_directory(db_path) ? (fname_split[fname_split.size() - 3] + "/") : "";
-		string output_name = results + seq_name + img_name + "_fv.csv";
+		string seq_name = is_directory(db_path) ? (fname_split[fname_split.size() - 3] + PATH_DELIMITER) : "";
+		string output_name = results + PATH_DELIMITER + seq_name + img_name + "_fv.csv";
 		std::ofstream f;
 		f.open(output_name);
 		for(int i = 0; i < enc_size; i++) {

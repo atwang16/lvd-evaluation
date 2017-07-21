@@ -25,6 +25,11 @@ if __name__ == "__main__":
                 datasets_folder = os.path.join(ROOT_PATH, dir)
             line = f.readline()
 
+    if datasets_folder is None:
+        print("Error: could not find all of the necessary directory paths from the following file:")
+        print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
+        sys.exit(1)
+
     db_path = sys.argv[1]
     db_name = db_path.split(os.sep)[-1]
     db_prefix = db_name[0:min(3, len(db_name))]

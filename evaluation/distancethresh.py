@@ -106,6 +106,11 @@ if __name__ == "__main__":
                 descriptor_parameters_path = os.path.join(ROOT_PATH, directory)
             line = f.readline()
 
+    if results_path is None or image_db_path is None or distthresh_executable is None or descriptor_parameters_path is None:
+        print("Error: could not find all of the necessary directory paths from the following file:")
+        print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
+        sys.exit(1)
+
     if generate_descs:
         generate_descriptors(desc_name, database)
 

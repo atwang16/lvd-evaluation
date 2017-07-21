@@ -17,8 +17,7 @@ def generate_fisher_vectors(desc_name, db):
     if not os.path.isdir(results_path):
         os.makedirs(results_path)
 
-    args = [fisher_vector_executable, PARAMETERS_PATH, desc_database_path + os.sep,
-            desc_database_path + os.sep, dictionary_path]
+    args = [fisher_vector_executable, PARAMETERS_PATH, desc_database_path, desc_database_path, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
@@ -46,6 +45,11 @@ if __name__ == "__main__":
             elif var == "FISHER_VECTOR_EXECUTABLE":
                 fisher_vector_executable = os.path.join(ROOT_PATH, directory)
             line = f.readline()
+
+    if results_path is None or fisher_vector_executable is None:
+        print("Error: could not find all of the necessary directory paths from the following file:")
+        print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
+        sys.exit(1)
 
     desc_results_path = os.path.join(results_path, desc_name)
 

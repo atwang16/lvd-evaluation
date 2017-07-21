@@ -11,6 +11,7 @@ image_db_path = None
 apptest2_executable = None
 descriptor_executable = None
 fisher_vector_executable = None
+file_output = None
 PARAMETERS_FILE = os.path.join(os.getcwd(), "parameters.txt")
 FISHER_PARAMETERS_FILE = os.path.join(os.getcwd(), "fisher_parameters.txt")
 IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
@@ -43,7 +44,7 @@ def is_fisher(fname):
 def generate_descriptors(desc, db):
     global descriptor_executable, image_db_path, results_path
 
-    args = [descriptor_executable, image_db_path + os.sep, results_path + os.sep]
+    args = [descriptor_executable, image_db_path, results_path]
     print(desc + ": " + "extracting descriptors from " + db)
     print("***")
     subprocess.run(args)
@@ -55,21 +56,20 @@ def generate_fisher_vectors(desc, db):
     results_db_path = desc_database_path
     dictionary_path = os.path.join(results_path, desc, desc + "_visual_dictionary.csv")
 
-    args = [fisher_vector_executable, FISHER_PARAMETERS_FILE, desc_database_path + os.sep,
-            results_db_path + os.sep, dictionary_path]
+    args = [fisher_vector_executable, FISHER_PARAMETERS_FILE, desc_database_path, results_db_path, dictionary_path]
     print(desc_name + ": " + "extracting fisher vectors from " + db)
     print("***")
     subprocess.run(args)
 
 
-def generate_results(subfolder):
-    global apptest2_executable
-    global mean_ave_prec, success_rate, num_queries, query_sample_size, file_output
-    results_sf_path = os.path.join(results_db_path, subfolder)
-    expand_results_sf = os.listdir(results_sf_path)
+def generate_results(sequence):
+    global apptest2_executable, file_output
+    global query_sample_size
+    results_seq_path = os.path.join(results_db_path, sequence)
+    expand_results = os.listdir(results_seq_path)
 
     fisher_vectors = []
-    for file in expand_results_sf:
+    for file in expand_results:
         if is_fisher(file):
             fisher_vectors.append(file)
     sorted(fisher_vectors)
@@ -79,8 +79,11 @@ def generate_results(subfolder):
     else:
         query_fisher_vectors = fisher_vectors
 
+    if len(query_fisher_vectors) == 0:
+        print("Error: no fisher vectors found in", results_seq_path)
+
     for query_fv in query_fisher_vectors:
-        query_fv_path = os.path.join(results_sf_path, query_fv)
+        query_fv_path = os.path.join(results_seq_path, query_fv)
 
         args = [apptest2_executable, desc_name, query_fv_path, results_db_path, "0", file_output]
 
@@ -112,13 +115,19 @@ if __name__ == "__main__":
                 results_path = os.path.join(ROOT_PATH, directory)
             elif var == "DATASETS_FOLDER":
                 image_db_path = os.path.join(ROOT_PATH, directory, database)
-            elif var == "APPTEST2_BUILD_FOLDER":
+            elif var == "APPTEST2_EXECUTABLE":
                 apptest2_executable = os.path.join(ROOT_PATH, directory)
             elif var == "FISHER_VECTOR_EXECUTABLE":
                 fisher_vector_executable = os.path.join(ROOT_PATH, directory)
             elif var == desc_name.upper() + "_EXECUTABLE":
                 descriptor_executable = os.path.join(ROOT_PATH, directory)
             line = f.readline()
+
+    if results_path is None or image_db_path is None or apptest2_executable is None or \
+                    fisher_vector_executable is None or descriptor_executable is None:
+        print("Error: could not find all of the necessary directory paths from the following file:")
+        print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
+        sys.exit(1)
 
     arg_index = 3
     while arg_index < len(sys.argv):
@@ -197,20 +206,24 @@ if __name__ == "__main__":
         if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":
             generate_results(r_seq)
 
-    with open(file_output) as f:
-        line = f.readline()
-        while line != "":
-            line_split = line.split(",")
-            ave_precision = float(line_split[1])
-            success = int(line_split[2])
-            mean_ave_prec += ave_precision
-            success_rate += success
-            num_queries += 1
-
+    if os.path.exists(file_output):
+        with open(file_output) as f:
             line = f.readline()
+            while line != "":
+                line_split = line.split(",")
+                ave_precision = float(line_split[1])
+                success = int(line_split[2])
+                mean_ave_prec += ave_precision
+                success_rate += success
+                num_queries += 1
 
-    mean_ave_prec /= num_queries
-    success_rate /= num_queries
+                line = f.readline()
 
-    print("Mean Average Precision:", mean_ave_prec)
-    print("Success Rate:", success_rate)
+    if num_queries > 0:
+        mean_ave_prec /= num_queries
+        success_rate /= num_queries
+
+        print("Mean Average Precision:", mean_ave_prec)
+        print("Success Rate:", success_rate)
+    else:
+        print("No queries found.")

@@ -18,6 +18,7 @@ subset_seq_size = 30
 query_sample_size = 5
 dist_threshold = float('inf')
 generate_subset = False
+generate_descs = False
 mean_ave_prec = 0
 success_rate = 0
 num_queries = 0
@@ -36,7 +37,7 @@ def is_desc(fname):
 def generate_descriptors(desc, db):
     global descriptor_executable, image_db_path, results_path
 
-    args = [descriptor_executable, img_db_path + os.sep, results_path + os.sep]
+    args = [descriptor_executable, image_db_path, results_path]
     print(desc + ": " + "extracting descriptors from " + db)
     print("***")
     subprocess.run(args)
@@ -62,7 +63,7 @@ def generate_results(sf):
     for query_ds in query_descriptors:
         query_ds_path = os.path.join(results_sf_path, query_ds)
 
-        args = [apptest_executable, PARAMETERS_FILE_PATH, desc_name, dist_threshold, distance, query_ds_path,
+        args = [apptest_executable, PARAMETERS_FILE_PATH, desc_name, str(dist_threshold), distance, query_ds_path,
                 results_db_path, "0", file_output]
 
         print(desc_name + ": " + database + " - query " + query_ds)
@@ -73,7 +74,7 @@ def generate_results(sf):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python imageretrieval.py desc_name database [-generate_subset]")
+        print("Usage: python imageretrieval.py desc_name database [-generate_subset] [-generate_descriptors]")
         sys.exit(1)
 
     desc_name = sys.argv[1]
@@ -91,20 +92,33 @@ if __name__ == "__main__":
                 results_path = os.path.join(ROOT_PATH, directory)
             elif var == "DATASETS_FOLDER":
                 image_db_path = os.path.join(ROOT_PATH, directory, database)
-            elif var == "APPTEST_BUILD_FOLDER":
+            elif var == "APPTEST_EXECUTABLE":
                 apptest_executable = os.path.join(ROOT_PATH, directory)
             elif var == "DESCRIPTORS_FOLDER":
-                descriptor_parameters_path = os.path.join(ROOT_PATH, directory)
+                descriptor_parameters_path = os.path.join(ROOT_PATH, directory, desc_name + "_parameters.txt")
             elif var == desc_name.upper() + "_EXECUTABLE":
                 descriptor_executable = os.path.join(ROOT_PATH, directory)
             line = f.readline()
 
-    if len(sys.argv) >= 4:
-        generate_subset = (sys.argv[3] == "-generate_subset")
+    if results_path is None or image_db_path is None or apptest_executable is None or \
+                    descriptor_parameters_path is None or descriptor_executable is None:
+        print("Error: could not find all of the necessary directory paths from the following file:")
+        print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
+        sys.exit(1)
+
+    arg_index = 3
+    while arg_index < len(sys.argv):
+        if sys.argv[arg_index] == "-generate_subset":
+            generate_subset = True
+            generate_descs = True
+        elif sys.argv[arg_index] == "-generate_descriptors":
+            generate_descs = True
+        arg_index += 1
+
     results_db_path = os.path.join(results_path, desc_name, database)
 
     # Get distance metric and distance threshold from file
-    with open(os.path.join(descriptor_parameters_path, desc_name + "_parameters.txt")) as f:
+    with open(descriptor_parameters_path) as f:
         line = f.readline()
         while line != "":
             line_split = line.split("=")
@@ -170,6 +184,8 @@ if __name__ == "__main__":
 
             image_db_path = new_img_db_path
             results_db_path = os.path.join(results_path, desc_name, database)
+        if generate_descs:
+            generate_descriptors(desc_name, database)
 
     file_output = os.path.join(results_db_path, desc_name + "_" + database[0:3] + "_imageretrieval.csv")
     result_sequences = os.listdir(results_db_path)
