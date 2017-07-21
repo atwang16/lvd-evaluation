@@ -20,11 +20,12 @@ using namespace std::chrono;
 int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
-	string dist_metric, desc_name, draw_results = "", stat_results = "", img_1_num, img_1_seq, img_2_num, img_2_seq;
+	string dist_metric, desc_name, draw_results = "", stat_results = "";
+	string img_1_num, img_1_seq, img_1_name, img_2_num, img_2_seq, img_2_name;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 
 	if(argc < 11) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [stat_results] [draw_results]\n";
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [-s stat_results] [-d draw_results]\n";
 		return 1;
 	}
 
@@ -71,6 +72,7 @@ int main(int argc, char *argv[]) {
 	boost::split(img_1_path_split, argv[3], boost::is_any_of("/."));
 	img_1_seq = img_1_path_split[img_1_path_split.size()-2].substr(0, 7);
 	img_1_num = img_1_path_split[img_1_path_split.size()-2].substr(8, 3);
+	img_1_name = img_1_path_split[img_1_path_split.size()-2].substr(0, 11);
 	desc_1 = parse_file(argv[4], ',', CV_8U);
 	kp_mat_1 = parse_file(argv[5], ',', CV_32F);
 	for(int i = 0; i < kp_mat_1.rows; i++) {
@@ -89,6 +91,7 @@ int main(int argc, char *argv[]) {
 	boost::split(img_2_path_split, argv[6], boost::is_any_of("/,."));
 	img_2_seq = img_2_path_split[img_2_path_split.size()-2].substr(0, 7);
 	img_2_num = img_2_path_split[img_2_path_split.size()-2].substr(8, 3);
+	img_2_name = img_2_path_split[img_2_path_split.size()-2].substr(0, 11);
 	desc_2 = parse_file(argv[7], ',', CV_8U);
 	kp_mat_2 = parse_file(argv[8], ',', CV_32F);
 	for(int i = 0; i < kp_mat_2.rows; i++) {
@@ -97,18 +100,24 @@ int main(int argc, char *argv[]) {
 		kp_2.pt.y = kp_mat_2.at<float>(i, 1);
 		kp_2.size = kp_mat_2.at<float>(i, 2);
 		kp_2.angle = kp_mat_2.at<float>(i, 3);
-		kp_2.response = kp_mat_2.at<float>(i, 5);
-		kp_2.octave = kp_mat_2.at<float>(i, 4);
+		kp_2.response = kp_mat_2.at<float>(i, 4);
+		kp_2.octave = kp_mat_2.at<float>(i, 5);
 		kp_vec_2.push_back(kp_2);
 	}
 	homography = parse_file(argv[9], ' ', CV_32F);
 	dist_metric = argv[10];
 
-	if(argc >= 12) {
-		stat_results = argv[11];
-	}
-	if(argc >= 13) {
-		draw_results = argv[12];
+	for(int arg_ind = 11; arg_ind < argc; arg_ind++) {
+		if(strcmp(argv[arg_ind], "-s") == 0) {
+			if(++arg_ind < argc) {
+				stat_results = argv[arg_ind];
+			}
+		}
+		else if(strcmp(argv[arg_ind], "-d") == 0) {
+			if(++arg_ind < argc) {
+				draw_results = argv[arg_ind];
+			}
+		}
 	}
 
 	if(img_1_seq != img_2_seq) {
@@ -123,7 +132,6 @@ int main(int argc, char *argv[]) {
 	matcher->knnMatch(desc_1, desc_2, nn_matches, 2);
 	high_resolution_clock::time_point end = high_resolution_clock::now();
 	long match_time = duration_cast<milliseconds>(end - start).count();
-	long match_time_per_kp = duration_cast<microseconds>(end - start).count() / kp_vec_1.size();
 
 	// Use the distance ratio to determine whether it is a "good" match
 	vector<DMatch> good_matches;
@@ -163,33 +171,38 @@ int main(int argc, char *argv[]) {
 
 	// Export metrics
 	if(stat_results == "") { // no directory specified for exporting results; print to console
-		cout << desc_name << " descriptor results:\n";
-		cout << "-----------------------\n";
-		cout << "Match ratio: " << match_ratio << "\n";
-		cout << "Matching score: " << matching_score << "\n";
-		cout << "Precision: " << precision << "\n";
-		cout << "Recall: " << recall << "\n";
+		cout << "Descriptor:                          " << desc_name              << "\n";
+		cout << "Image 1:                             " << argv[3]                << "\n";
+		cout << "Image 2:                             " << argv[6]                << "\n";
+		cout << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
+		cout                                                                      << "\n";
+		cout << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
+		cout << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
+		cout << "Number of Matches:                   " << good_matches.size()    << "\n";
+		cout << "Number of Correct Matches:           " << correct_matches.size() << "\n";
+		cout << "Number of Correspondences:           " << num_correspondences    << "\n";
+		cout                                                                      << "\n";
+		cout << "Match ratio:                         " << match_ratio            << "\n";
+		cout << "Matching score:                      " << matching_score         << "\n";
+		cout << "Precision:                           " << precision              << "\n";
+		cout << "Recall:                              " << recall                 << "\n";
+		cout << "Matching time (ms):                  " << match_time             << "\n";
 	}
 	else {
 		ofstream f;
-		f.open(stat_results);
-		f << "Descriptor:                          " << desc_name              << "\n";
-		f << "Image 1:                             " << argv[3]                << "\n";
-		f << "Image 2:                             " << argv[6]                << "\n";
-		f << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
-		f                                                                      << "\n";
-		f << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";
-		f << "Number of Keypoints for Image 2:     " << kp_vec_2.size()        << "\n";
-		f << "Number of Matches:                   " << good_matches.size()    << "\n";
-		f << "Number of Correct Matches:           " << correct_matches.size() << "\n";
-		f << "Number of Correspondences:           " << num_correspondences    << "\n";
-		f                                                                      << "\n";
-		f << "Match ratio:                         " << match_ratio            << "\n";
-		f << "Matching score:                      " << matching_score         << "\n";
-		f << "Precision:                           " << precision              << "\n";
-		f << "Recall:                              " << recall                 << "\n";
-		f << "Matching time (ms):                  " << match_time             << "\n";
-		f << "Matching time per keypoint (mus):    " << match_time_per_kp      << "\n";
+		f.open(stat_results, ofstream::out | ofstream::app);
+		f << img_1_name             << ",";
+		f << img_2_name             << ",";
+		f << kp_vec_1.size()        << ",";
+		f << kp_vec_2.size()        << ",";
+		f << good_matches.size()    << ",";
+		f << correct_matches.size() << ",";
+		f << num_correspondences    << ",";
+		f << match_ratio            << ",";
+		f << matching_score         << ",";
+		f << precision              << ",";
+		f << recall                 << ",";
+		f << match_time             << "\n";
 		f.close();
 	}
 
