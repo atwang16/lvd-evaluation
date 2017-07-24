@@ -19,6 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <algorithm>
 
 using namespace boost::filesystem;
 using namespace std::chrono;
@@ -151,6 +152,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
+		sort(images.begin(), images.end());
 	}
 	else if(is_image(image_directory)){ // input is an image
 		single_image = true;

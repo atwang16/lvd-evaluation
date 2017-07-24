@@ -1,13 +1,13 @@
 /*
- * latch.cpp
+ * kaze.cpp
  *
- *  Created on: Jun 26, 2017
+ *  Created on: Jul 24, 2017
  *      Author: Austin Wang
  *      Project: A Comparative Study of Local Visual Descriptors
- *      Descriptor: LATCH
+ *      Descriptor: KAZE
  *      Descriptor Citation:  <To Be Entered>
  *
- *  This source code extracts the LATCH descriptor from images.
+ *  This source code extracts the KAZE descriptor from images.
  */
 
 #include <opencv2/opencv.hpp>
@@ -31,9 +31,6 @@ using namespace std;
  * MODIFY FOR EACH DESCRIPTOR *
  ******************************/
 
-// Libraries
-#include "opencv2/xfeatures2d.hpp"
-
 // Compile-time Constants
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
@@ -41,29 +38,48 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 		long* kp_time, long* desc_time, long* total_time) {
 	// Parameters to load from file
 	std::ifstream params(parameter_file);
-	std::string line, var, value;
-	std::vector<std::string> line_split;
+	string line, var, value;
 
 	// default parameters
-	int nfeatures = 10000;
+	bool extended=false;
+	bool upright=false;
+	float threshold=0.001f;
+	int n_octaves=4;
+	int n_octave_layers=4;
+	int diffusivity=cv::KAZE::DIFF_PM_G2;
 
 	// Load parameters from file
+	vector<string> line_split;
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
-		value = line_split.back();
-		if(var == "nfeatures") {
-			nfeatures = stoi(value);
+		value = line_split[1];
+		if(var == "EXTENDED") {
+			extended = stoi(value);
+		}
+		else if(var == "UPRIGHT") {
+			upright = stoi(value);
+		}
+		else if(var == "THRESHOLD") {
+			threshold = stof(value);
+		}
+		else if(var == "N_OCTAVES") {
+			n_octaves = stoi(value);
+		}
+		else if(var == "N_OCTAVE_LAYERS") {
+			n_octave_layers = stoi(value);
+		}
+		else if(var == "DIFFUSIVITY") {
+			diffusivity = stoi(value);
 		}
 	}
 
 	// Extract keypoints and compute descriptors
-	cv::Ptr<cv::ORB> orb_detector = cv::ORB::create(nfeatures);
-	cv::Ptr<cv::xfeatures2d::LATCH> latch = cv::xfeatures2d::LATCH::create();
+	cv::Ptr<cv::Feature2D> kaze = cv::KAZE::create(extended, upright, threshold, n_octaves, n_octave_layers, diffusivity);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	orb_detector->detect(image, keypoints);
+	kaze->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	latch->compute(image, keypoints, descriptors);
+	kaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();

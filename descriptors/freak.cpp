@@ -1,13 +1,13 @@
 /*
- * latch.cpp
+ * freak.cpp
  *
- *  Created on: Jun 26, 2017
+ *  Created on: Jul 24, 2017
  *      Author: Austin Wang
  *      Project: A Comparative Study of Local Visual Descriptors
- *      Descriptor: LATCH
- *      Descriptor Citation:  <To Be Entered>
+ *      Descriptor: FREAK
+ *      Descriptor Citation:  TBD
  *
- *  This source code extracts the LATCH descriptor from images.
+ *  This source code extracts the FREAK descriptor from images.
  */
 
 #include <opencv2/opencv.hpp>
@@ -44,26 +44,48 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	std::string line, var, value;
 	std::vector<std::string> line_split;
 
-	// default parameters
-	int nfeatures = 10000;
+	// parameters with default values
+	int agast_thresh=10;
+	bool nonmax_suppression=true;
+	int type=cv::AgastFeatureDetector::OAST_9_16;
+	bool orientation_normalized=true;
+	bool scale_normalized=true;
+	float pattern_scale=22.0f;
+	int n_octaves=4;
 
 	// Load parameters from file
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
 		value = line_split.back();
-		if(var == "nfeatures") {
-			nfeatures = stoi(value);
+
+		if(var == "AGAST_THRESHOLD") {
+			agast_thresh = stoi(value);
+		}
+		else if(var == "NONMAX_SUPPRESSION") {
+			nonmax_suppression = stoi(value);
+		}
+		else if(var == "USE_ORIENTATION") {
+			orientation_normalized = stoi(value);
+		}
+		else if(var == "NORMALIZE_SCALE") {
+			scale_normalized = stoi(value);
+		}
+		else if(var == "PATTERN_SCALE") {
+			pattern_scale = stof(value);
+		}
+		else if(var == "N_OCTAVES") {
+			n_octaves = stoi(value);
 		}
 	}
 
 	// Extract keypoints and compute descriptors
-	cv::Ptr<cv::ORB> orb_detector = cv::ORB::create(nfeatures);
-	cv::Ptr<cv::xfeatures2d::LATCH> latch = cv::xfeatures2d::LATCH::create();
+	cv::Ptr<cv::Feature2D> agast = cv::AgastFeatureDetector::create(agast_thresh, nonmax_suppression, type);
+	cv::Ptr<cv::Feature2D> freak = cv::xfeatures2d::FREAK::create(orientation_normalized, scale_normalized, pattern_scale, n_octaves);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	orb_detector->detect(image, keypoints);
+	agast->detect(image, keypoints, cv::noArray());
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	latch->compute(image, keypoints, descriptors);
+	freak->compute(image, keypoints, descriptors);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();

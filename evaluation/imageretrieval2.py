@@ -66,7 +66,7 @@ def generate_results(sequence):
     global apptest2_executable, file_output
     global query_sample_size
     results_seq_path = os.path.join(results_db_path, sequence)
-    expand_results = os.listdir(results_seq_path)
+    expand_results = sorted(os.listdir(results_seq_path))
 
     fisher_vectors = []
     for file in expand_results:
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             rmtree(new_img_db_path)
 
         os.mkdir(new_img_db_path)
-        db_sequences = os.listdir(image_db_path)
+        db_sequences = sorted(os.listdir(image_db_path))
 
         for seq in db_sequences:
             old_seq = os.path.join(image_db_path, seq)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
 
             if os.path.isdir(old_seq):
                 os.mkdir(new_seq)
-                seq_files = os.listdir(old_seq)
+                seq_files = sorted(os.listdir(old_seq))
                 seq_images = []
 
                 # remove non-images
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         generate_fisher_vectors(desc_name, database)
 
     file_output = os.path.join(results_db_path, desc_name + "_" + database[0:3] + "_imageretrieval2.csv")
-    result_sequences = os.listdir(results_db_path)
+    result_sequences = sorted(os.listdir(results_db_path))
 
     for r_seq in result_sequences:
         if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":

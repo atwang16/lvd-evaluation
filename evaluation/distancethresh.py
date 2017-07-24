@@ -38,7 +38,7 @@ def generate_results(sequence):
     img_num = 2
     image_seq_path = os.path.join(image_db_path, sequence)
     results_seq_path = os.path.join(results_db_path, sequence)
-    expand_image_dir = os.listdir(image_seq_path)
+    expand_image_dir = sorted(os.listdir(image_seq_path))
 
     images = []
     for file in expand_image_dir:
@@ -129,7 +129,7 @@ if __name__ == "__main__":
                 distance = value
             line = f.readline()
 
-    db_sequences = os.listdir(results_db_path)
+    db_sequences = sorted(os.listdir(results_db_path))
 
     for seq in db_sequences:
         if os.path.isdir(os.path.join(results_db_path, seq)):  # ignore .DS_STORE-like files

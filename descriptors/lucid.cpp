@@ -1,13 +1,13 @@
 /*
- * latch.cpp
+ * lucid.cpp
  *
- *  Created on: Jun 26, 2017
+ *  Created on: Jul 24, 2017
  *      Author: Austin Wang
  *      Project: A Comparative Study of Local Visual Descriptors
- *      Descriptor: LATCH
- *      Descriptor Citation:  <To Be Entered>
+ *      Descriptor: LUCID
+ *      Descriptor Citation:  TBD
  *
- *  This source code extracts the LATCH descriptor from images.
+ *  This source code extracts the LUCID descriptor from images.
  */
 
 #include <opencv2/opencv.hpp>
@@ -44,26 +44,43 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	std::string line, var, value;
 	std::vector<std::string> line_split;
 
-	// default parameters
-	int nfeatures = 10000;
+	// parameters with default values
+	int fast_thresh=10;
+	bool nonmax_suppression=true;
+	int type=cv::FastFeatureDetector::TYPE_9_16;
+	int lucid_kernel = 1;
+	int blur_kernel = 2;
 
 	// Load parameters from file
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
 		value = line_split.back();
-		if(var == "nfeatures") {
-			nfeatures = stoi(value);
+
+		if(var == "FAST_THRESHOLD") {
+			fast_thresh = stoi(value);
+		}
+		else if(var == "NONMAX_SUPPRESSION") {
+			nonmax_suppression = stoi(value);
+		}
+		else if(var == "TYPE") {
+			type = stoi(value);
+		}
+		else if(var == "LUCID_KERNEL") {
+			lucid_kernel = stoi(value);
+		}
+		else if(var == "BLUR_KERNEL") {
+			blur_kernel = stoi(value);
 		}
 	}
 
 	// Extract keypoints and compute descriptors
-	cv::Ptr<cv::ORB> orb_detector = cv::ORB::create(nfeatures);
-	cv::Ptr<cv::xfeatures2d::LATCH> latch = cv::xfeatures2d::LATCH::create();
+	cv::Ptr<cv::Feature2D> fast = cv::FastFeatureDetector::create(fast_thresh, nonmax_suppression, type);
+	cv::Ptr<cv::Feature2D> lucid = cv::xfeatures2d::LUCID::create(lucid_kernel, blur_kernel);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	orb_detector->detect(image, keypoints);
+	fast->detect(image, keypoints, cv::noArray());
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	latch->compute(image, keypoints, descriptors);
+	lucid->compute(image, keypoints, descriptors);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();

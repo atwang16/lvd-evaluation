@@ -47,7 +47,7 @@ def generate_results(sf):
     global results_db_path, apptest_executable
     global mean_ave_prec, success_rate, num_queries, query_sample_size, file_output
     results_sf_path = os.path.join(results_db_path, sf)
-    expand_results_sf = os.listdir(results_sf_path)
+    expand_results_sf = sorted(os.listdir(results_sf_path))
 
     descriptors = []
     for file in expand_results_sf:
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                 rmtree(new_img_db_path)
 
             os.mkdir(new_img_db_path)
-            db_sequences = os.listdir(image_db_path)
+            db_sequences = sorted(os.listdir(image_db_path))
 
             for seq in db_sequences:
                 old_seq = os.path.join(image_db_path, seq)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
                 if os.path.isdir(old_seq):
                     os.mkdir(new_seq)
-                    seq_files = os.listdir(old_seq)
+                    seq_files = sorted(os.listdir(old_seq))
                     seq_images = []
 
                     # remove non-images
@@ -188,7 +188,7 @@ if __name__ == "__main__":
             generate_descriptors(desc_name, database)
 
     file_output = os.path.join(results_db_path, desc_name + "_" + database[0:3] + "_imageretrieval.csv")
-    result_sequences = os.listdir(results_db_path)
+    result_sequences = sorted(os.listdir(results_db_path))
 
     for r_seq in result_sequences:
         if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":

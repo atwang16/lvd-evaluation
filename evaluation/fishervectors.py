@@ -62,7 +62,7 @@ if __name__ == "__main__":
         generate_fisher_vectors(desc_name, database)
     # Generate fisher vectors for all databases
     else:
-        all_databases = os.listdir(desc_results_path)
+        all_databases = sorted(os.listdir(desc_results_path))
 
         for db in all_databases:
             if os.path.isdir(os.path.join(desc_results_path, db)):

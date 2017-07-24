@@ -56,7 +56,7 @@ if __name__ == "__main__":
         image_db_path = os.path.join(image_all_db_path, database)
         generate_descriptors(desc_name, database)
     else:
-        all_databases = os.listdir(image_all_db_path)
+        all_databases = sorted(os.listdir(image_all_db_path))
 
         for db in all_databases:
             image_db_path = os.path.join(image_all_db_path, db)

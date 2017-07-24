@@ -19,6 +19,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <algorithm>
 
 using namespace boost::filesystem;
 using namespace std::chrono;
@@ -57,19 +58,19 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 		var = line_split[0];
 		value = line_split.back();
 
-		if(var == "nfeatures") {
+		if(var == "N_FEATURES") {
 			nfeatures = stoi(value);
 		}
-		else if(var == "nOctaveLayers") {
+		else if(var == "N_OCTAVE_LAYERS") {
 			nOctaveLayers = stoi(value);
 		}
-		else if(var == "contrastThreshold") {
+		else if(var == "CONTRAST_THRESHOLD") {
 			contrastThreshold = stod(value);
 		}
-		else if(var == "edgeThreshold") {
+		else if(var == "EDGE_THRESHOLD") {
 			edgeThreshold = stod(value);
 		}
-		else if(var == "sigma") {
+		else if(var == "SIGMA") {
 			sigma = stod(value);
 		}
 	}
@@ -149,6 +150,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
+		sort(images.begin(), images.end());
 	}
 	else if(is_image(image_directory)){ // input is an image
 		single_image = true;
