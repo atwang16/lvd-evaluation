@@ -45,10 +45,11 @@ if __name__ == "__main__":
     images_old = []
     images_new = []
 
-    for sdir in subdirs:
+    for i in range(len(subdirs)):
+        sdir = subdirs[len(subdirs)-1-i]
         if os.path.isdir(os.path.join(db_path, sdir)):
             if preprocessing:
-                sdir_rename = sdir # preprocessing step, if necessary; modify this line
+                sdir_rename = db_name[0:3] + "_" + "{0:03d}".format(int(sdir[4:])+1) # preprocessing step, if necessary; modify this line
                 os.rename(os.path.join(db_path, sdir), os.path.join(db_path, sdir_rename))
                 sdir = sdir_rename
 
@@ -66,7 +67,7 @@ if __name__ == "__main__":
                 img_ext = os.path.splitext(img_path)[1]
                 if img_ext in img_extensions:
                     if preprocessing:
-                        img_rename = img # preprocessing step, if necessary; modify this line
+                        img_rename = db_name[0:3] + "_" + "{0:03d}".format(int(img[4:7])+1) + "_" + "{0:03d}".format(int(img[8:11])+1) + img[11:]  # preprocessing step, if necessary; modify this line
                         os.rename(os.path.join(db_path, sdir, img), os.path.join(db_path, sdir, img_rename))
                         img = img_rename
 
@@ -77,7 +78,7 @@ if __name__ == "__main__":
                 elif img[0] == "H": # homography
                     if preprocessing:
                         hom = img
-                        hom_rename = "H" + hom[2] + "to" + hom[4] + "p"
+                        hom_rename = hom #preprocessing step, if necessary; modify this line
                         os.rename(os.path.join(db_path, sdir, hom), os.path.join(db_path, sdir, hom_rename))
                         hom = hom_rename
             sdir_num += 1
