@@ -1,0 +1,60 @@
+Shi-Tomasi Detector:
+int maxCorners=1000;
+double qualityLevel=0.01;
+double minDistance=1;
+int blockSize=3;
+bool useHarrisDetector=false;
+double k=0.04;
+
+Ptr< cv::GFTTDetector > shitomasi = cv::GFTTDetector::create(maxCorners, qualityLevel, minDistance, blockSize, useHarrisDetector, k);
+detect(image, keypoints);
+
+CenSurE:
+int maxSize=45;
+int responseThreshold=30;
+int lineThresholdProjected=10;
+int lineThresholdBinarized=8;
+int suppressNonmaxSize=5;
+
+Ptr< cv::StarDetector > censure = cv::StarDetector::create(maxSize,  responseThreshold, lineThresholdProjected, lineThresholdBinarized, suppressNonmaxSize);
+detect(image, keypoints);
+
+
+MSER:
+int _delta=5;
+int _min_area=60;
+int _max_area=14400;
+double _max_variation=0.25;
+double _min_diversity=.2;
+int _max_evolution=200;
+double _area_threshold=1.01;
+double _min_margin=0.003;
+int _edge_blur_size=5;
+
+Ptr< cv::MSER > mser = cv::MSER::create(_delta, _min_area, _max_area, _max_variation, _min_diversity, _max_evolution, _area_threshold, _min_margin, _edge_blur_size);
+detect(image, keypoints);
+
+FAST:
+int threshold=10;
+bool nonmaxSuppression=true;
+int type=FastFeatureDetector::TYPE_9_16;
+
+Ptr< cv::FastFeatureDetector > fast = cv::FastFeatureDetector::create(threshold, nonmaxSuppression, type);
+detect(image, keypoints);
+
+Difference of Gaussians (DoG):
+DogFeatureDetector(image, keypoints);
+
+Hessian-Laplace (HesLap):
+HesLapFeatureDetector(image, keypoints);
+
+Harris-Laplace (HarLap):
+HarLapFeatureDetector(image, keypoints);
+
+Hessian-Affine (HesAff):
+HesAffFeatureDetector(image, keypoints);
+
+Harris-Affine (HarAff):
+HarAffFeatureDetector(image, keypoints);
+
+

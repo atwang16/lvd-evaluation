@@ -18,3 +18,4 @@ ORB_EXECUTABLE=build/descriptors/orb
 SIFT_EXECUTABLE=build/descriptors/sift
 SURF_EXECUTABLE=build/descriptors/surf
 USURF_EXECUTABLE=build/descriptors/usurf
+

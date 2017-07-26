@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
+		sort(desc_vec.begin(), desc_vec.end());
 	}
 	else if(is_desc(db_path)) {
 		desc_vec.push_back(db_path);
