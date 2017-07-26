@@ -167,37 +167,37 @@ if __name__ == "__main__":
 
                 line = f.readline()
 
-    if len(seq_statistics) > 0:
-        total_match_ratio = 0
-        total_matching_score = 0
-        total_precision = 0
-        total_recall = 0
-        total_match_time = 0
-        total_num_queries = 0
+        if len(seq_statistics) > 0:
+            total_match_ratio = 0
+            total_matching_score = 0
+            total_precision = 0
+            total_recall = 0
+            total_match_time = 0
+            total_num_queries = 0
 
-        for seq in seq_statistics:
-            print("Sequence " + seq +":")
-            print("  Match ratio:", seq_statistics[seq][MATCH_RATIO] / seq_statistics[seq][NUM_QUERIES])
-            print("  Matching score:", seq_statistics[seq][MATCHING_SCORE] / seq_statistics[seq][NUM_QUERIES])
-            print("  Precision:", seq_statistics[seq][PRECISION] / seq_statistics[seq][NUM_QUERIES])
-            print("  Recall:", seq_statistics[seq][RECALL] / seq_statistics[seq][NUM_QUERIES])
-            print("  Match time (ms):", seq_statistics[seq][MATCH_TIME] / seq_statistics[seq][NUM_QUERIES])
+            for seq in seq_statistics:
+                print("Sequence " + seq +":")
+                print("  Match ratio:", seq_statistics[seq][MATCH_RATIO] / seq_statistics[seq][NUM_QUERIES])
+                print("  Matching score:", seq_statistics[seq][MATCHING_SCORE] / seq_statistics[seq][NUM_QUERIES])
+                print("  Precision:", seq_statistics[seq][PRECISION] / seq_statistics[seq][NUM_QUERIES])
+                print("  Recall:", seq_statistics[seq][RECALL] / seq_statistics[seq][NUM_QUERIES])
+                print("  Match time (ms):", seq_statistics[seq][MATCH_TIME] / seq_statistics[seq][NUM_QUERIES])
+                print()
+
+                total_match_ratio += seq_statistics[seq][MATCH_RATIO]
+                total_matching_score += seq_statistics[seq][MATCHING_SCORE]
+                total_precision += seq_statistics[seq][PRECISION]
+                total_recall += seq_statistics[seq][RECALL]
+                total_match_time += seq_statistics[seq][MATCH_TIME]
+                total_num_queries += seq_statistics[seq][NUM_QUERIES]
+
+            print("Cumulative results:")
+            print("  Match ratio:", total_match_ratio / total_num_queries)
+            print("  Matching score:", total_matching_score / total_num_queries)
+            print("  Precision:", total_precision / total_num_queries)
+            print("  Recall:", total_recall / total_num_queries)
+            print("  Match time (ms):", total_match_time / total_num_queries)
             print()
-
-            total_match_ratio += seq_statistics[seq][MATCH_RATIO]
-            total_matching_score += seq_statistics[seq][MATCHING_SCORE]
-            total_precision += seq_statistics[seq][PRECISION]
-            total_recall += seq_statistics[seq][RECALL]
-            total_match_time += seq_statistics[seq][MATCH_TIME]
-            total_num_queries += seq_statistics[seq][NUM_QUERIES]
-
-        print("Cumulative results:")
-        print("  Match ratio:", total_match_ratio / total_num_queries)
-        print("  Matching score:", total_matching_score / total_num_queries)
-        print("  Precision:", total_precision / total_num_queries)
-        print("  Recall:", total_recall / total_num_queries)
-        print("  Match time (ms):", total_match_time / total_num_queries)
-        print()
 
 
 
