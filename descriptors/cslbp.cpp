@@ -37,16 +37,19 @@ using namespace std;
 
 void compute(cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, float const threshold) {
 	descriptors = cv::Mat::zeros(keypoints.size(), 16, CV_8U);
+	Mat image_fl;
+	image.convertTo(image_fl, CV_32F);
 
 	for(int i = 0; i < keypoints.size(); i++) {
-		cv::Mat patch;
-		cv::getRectSubPix(image, cv::Size(keypoints[i].size, keypoints[i].size), keypoints[i].pt, patch);
+		cv::Mat patch, patch_fl;
+		cv::getRectSubPix(image_fl, cv::Size(keypoints[i].size, keypoints[i].size), keypoints[i].pt, patch);
+		patch_fl = patch;
 		for(int x = 1; x < patch.cols - 1; x++) {
 			for(int y = 1; y < patch.rows - 1; y++) {
-				int a = ((patch.at<float>(x,y+1)   - patch.at<float>(x,y-1)   > threshold) * 1);
-				int b = ((patch.at<float>(x+1,y+1) - patch.at<float>(x-1,y-1) > threshold) * 2);
-				int c = ((patch.at<float>(x+1,y)   - patch.at<float>(x-1,y)   > threshold) * 4);
-				int d = ((patch.at<float>(x+1,y-1) - patch.at<float>(x-1,y+1) > threshold) * 8);
+				int a = ((patch_fl.at<float>(x,y+1)   - patch_fl.at<float>(x,y-1)   > threshold) * 1);
+				int b = ((patch_fl.at<float>(x+1,y+1) - patch_fl.at<float>(x-1,y-1) > threshold) * 2);
+				int c = ((patch_fl.at<float>(x+1,y)   - patch_fl.at<float>(x-1,y)   > threshold) * 4);
+				int d = ((patch_fl.at<float>(x+1,y-1) - patch_fl.at<float>(x-1,y+1) > threshold) * 8);
 				descriptors.at<uchar>(i, a+b+c+d)++;
 			}
 		}
@@ -76,14 +79,15 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	}
 
 	// Extract keypoints and compute descriptors
-	cv::Ptr< cv::FastFeatureDetector > fast = cv::FastFeatureDetector::create();
+//	cv::Ptr< cv::FastFeatureDetector > fast = cv::FastFeatureDetector::create();
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-//	HesLapFeatureDetector(image, keypoints);
-	fast->detect(image, keypoints);
+	HesAffFeatureDetector(image, keypoints);
+//	fast->detect(image, keypoints);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 	cout << "Found " << keypoints.size() << " keypoints.\n";
 	compute(image, keypoints, descriptors, threshold);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
+	cout << "Computed descriptors.\n";
 
 	int num_keypoints = keypoints.size();
 	*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
