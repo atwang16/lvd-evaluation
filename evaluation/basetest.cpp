@@ -79,10 +79,6 @@ int main(int argc, char *argv[]) {
 		KeyPoint kp_1 = KeyPoint();
 		kp_1.pt.x = kp_mat_1.at<float>(i, 0);
 		kp_1.pt.y = kp_mat_1.at<float>(i, 1);
-		kp_1.size = kp_mat_1.at<float>(i, 2);
-		kp_1.angle = kp_mat_1.at<float>(i, 3);
-		kp_1.response = kp_mat_1.at<float>(i, 4);
-		kp_1.octave = kp_mat_1.at<float>(i, 5);
 		kp_vec_1.push_back(kp_1);
 	}
 
@@ -98,10 +94,6 @@ int main(int argc, char *argv[]) {
 		KeyPoint kp_2 = KeyPoint();
 		kp_2.pt.x = kp_mat_2.at<float>(i, 0);
 		kp_2.pt.y = kp_mat_2.at<float>(i, 1);
-		kp_2.size = kp_mat_2.at<float>(i, 2);
-		kp_2.angle = kp_mat_2.at<float>(i, 3);
-		kp_2.response = kp_mat_2.at<float>(i, 4);
-		kp_2.octave = kp_mat_2.at<float>(i, 5);
 		kp_vec_2.push_back(kp_2);
 	}
 	homography = parse_file(argv[9], ' ', CV_32F);

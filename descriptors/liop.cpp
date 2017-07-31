@@ -24,6 +24,7 @@
 using namespace boost::filesystem;
 using namespace std::chrono;
 using namespace std;
+using namespace cv;
 
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
@@ -34,12 +35,35 @@ using namespace std;
 
 // Libraries
 #include "opencv2/xfeatures2d.hpp"
+#include "detectors.hpp"
 extern "C" {
-#include "vl/liop.h"
+#include <vl/liop.h>
 }
 
 // Compile-time Constants
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
+
+void compute(cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors) {
+	Mat image_fl, patch_image;
+	image.convertTo(image_fl, CV_32F);
+
+	vl_size side_length = 41;
+	VlLiopDesc *liop = vl_liopdesc_new_basic(side_length);
+	descriptors = cv::Mat::zeros(keypoints.size(), vl_liopdesc_get_dimension(liop), CV_8U);
+
+	for(int i = 0; i < keypoints.size(); i++) {
+		KeyPoint kp = keypoints[i];
+		int corner_x = kp.pt.x - side_length/2;
+		int corner_y = kp.pt.y - side_length/2;
+		if(corner_x >= 0 && corner_x + side_length < image_fl.cols && corner_y >= 0 && corner_y + kp.size < image_fl.rows) {
+			Rect patch_bound = Rect(corner_x, corner_y, side_length, side_length);
+			patch_image = image_fl(patch_bound);
+			vl_liopdesc_process(liop, (float *)descriptors.data + i * descriptors.cols, (float *)patch_image.data);
+		}
+	}
+	// delete the object
+	vl_liopdesc_delete(liop);
+}
 
 void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors,
 		long* kp_time, long* desc_time, long* total_time) {
@@ -79,16 +103,18 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	}
 
 	// Extract keypoints and compute descriptors
-	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	sift->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
+	HesAffFeatureDetector(image, keypoints);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	sift->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
+	cout << "Found " << keypoints.size() << " keypoints.\n";
+	compute(image, keypoints, descriptors);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();
-	*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
-	*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+	if(num_keypoints > 0) {
+		*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
+		*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+	}
 	*total_time += duration_cast<milliseconds>(desc_done - start).count();
 }
 

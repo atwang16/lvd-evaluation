@@ -1,5 +1,5 @@
 /*
- * sift.cpp
+ * generate_keypoints.cpp
  *
  *  Created on: Jun 26, 2017
  *      Author: Austin Wang
@@ -8,7 +8,7 @@
  *      Descriptor Citation:  David G. Lowe. Object recognition from local scale-invariant features. In Proceedings
  *                            of 1999 IEEE International Conference on Computer Vision, pages 1150–1157, September 1999.
  *
- *  This source code extracts the SIFT descriptor from images.
+ *  This source code generates keypoints using a chosen keypoint detector and outputs the data to a file.
  */
 
 #include <opencv2/opencv.hpp>
@@ -20,10 +20,12 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <algorithm>
+#include "detectors.hpp"
 
 using namespace boost::filesystem;
 using namespace std::chrono;
 using namespace std;
+using namespace cv;
 
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
@@ -38,8 +40,7 @@ using namespace std;
 // Compile-time Constants
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
-void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors,
-		long* kp_time, long* desc_time, long* total_time) {
+void detect(string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time) {
 	// Parameters to load from file
 	std::ifstream params(parameter_file);
 	std::string line, var, value;
@@ -56,7 +57,7 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
-		value = line_split.back();
+		value = line_split[1];
 
 		if(var == "N_FEATURES") {
 			nfeatures = stoi(value);
@@ -80,15 +81,11 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	high_resolution_clock::time_point start = high_resolution_clock::now();
 	sift->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	sift->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
-	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();
 	if(num_keypoints > 0) {
-		*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
-		*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+		kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
 	}
-	*total_time += duration_cast<milliseconds>(desc_done - start).count();
 }
 
 /***********************
@@ -100,22 +97,18 @@ bool is_image(string fname);
 int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, output_directory, database_name;
 	bool single_image;
-
-	// Get descriptor name
-	string filename = __FILE__;
-	vector<string> filename_split;
-	boost::split(filename_split, filename, boost::is_any_of("/."));
-	string descriptor = filename_split[filename_split.size() - 2];
+	Detector det;
 
 	if(argc < 4) {
-		cout << "Usage ./" << descriptor << " path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
-		cout << "      ./" << descriptor << " path_to_parameter_file path_to_image path_to_destination" << "\n";
+		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
+		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination" << "\n";
 		return 1;
 	}
 
-	parameter_file = argv[1];
-	image_directory = argv[2];
-	output_directory = argv[3];
+	det = stoi(argv[1]);
+	parameter_file = argv[2];
+	image_directory = argv[3];
+	output_directory = argv[4];
 
 	// get all the sequences
 	vector<string> images;
@@ -139,7 +132,6 @@ int main(int argc, char *argv[]) {
 			string seq_name = seq_split.back();
 			if(is_directory(seq)) {
 				boost::filesystem::path dir(output_directory + PATH_DELIMITER
-						+ descriptor + PATH_DELIMITER
 						+ database_name + PATH_DELIMITER
 						+ seq_name);
 				boost::filesystem::create_directories(dir);
@@ -160,28 +152,26 @@ int main(int argc, char *argv[]) {
 	}
 	else {
 		cout << "Error: invalid input.\n";
-		cout << "Usage ./" << descriptor << " image_dataset_root_folder [destination_folder]" << "\n";
-		cout << "      ./" << descriptor << " image_path [destination_folder]" << "\n";
+		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
+		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination" << "\n";
 		return 1;
 	}
 
-	long kp_time = 0, desc_time = 0, total_time = 0;
+	long kp_time = 0;
 	int num_images = 0;
 
 	for(auto const& img : images) {
-		cout << "Extracting descriptors for " << img << "\n";
+		cout << "Extracting keypoints for " << img << "\n";
 
 		// Read the image
 		cv::Mat img_mat = cv::imread(img, IMG_READ_COLOR);
 
-		string ds_path, kp_path;
+		string kp_path;
 		vector<string> img_split;
 		boost::split(img_split, img, boost::is_any_of("/."));
 		string img_name = img_split[img_split.size() - 2];
 
 		if(single_image) {
-			ds_path = output_directory + PATH_DELIMITER
-					+ img_name + "_ds.csv";
 			kp_path = output_directory + PATH_DELIMITER
 					+ img_name + "_kp.csv";
 		}
@@ -189,22 +179,15 @@ int main(int argc, char *argv[]) {
 			// get the type name (e.g. ref, e1, e2, etc.)
 			string seq_name = img_split[img_split.size() - 3];
 
-			ds_path = output_directory + PATH_DELIMITER
-					+ descriptor + PATH_DELIMITER
-					+ database_name + PATH_DELIMITER
-					+ seq_name + PATH_DELIMITER
-					+ img_name + "_ds.csv";
 			kp_path = output_directory + PATH_DELIMITER
-					+ descriptor + PATH_DELIMITER
 					+ database_name + PATH_DELIMITER
 					+ seq_name + PATH_DELIMITER
 					+ img_name + "_kp.csv";
 		}
 
 		// Compute descriptors
-		cv::Mat descriptors;
-		vector<cv::KeyPoint> keypoints;
-		detectAndCompute(descriptor, parameter_file, img_mat, keypoints, descriptors, &kp_time, &desc_time, &total_time);
+		vector<KeyPoint> keypoints;
+		detect(parameter_file, img_mat, keypoints, kp_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
@@ -220,29 +203,14 @@ int main(int argc, char *argv[]) {
 		f_key.close();
 		cout << "Keypoints stored at " << kp_path << "\n";
 
-		// Open the descriptor file for saving
-		std::ofstream f_desc;
-		f_desc.open(ds_path);
-		f_desc << cv::format(descriptors, cv::Formatter::FMT_CSV) << endl;
-		f_desc.close();
-		cout << "Descriptors stored at " << ds_path << "\n" << "\n";
-
 		num_images++;
 	}
 
-	kp_time /= num_images;
-	desc_time /= num_images;
-	total_time /= num_images;
-
 	std::ofstream f;
 	f.open(output_directory + PATH_DELIMITER
-			+ descriptor + PATH_DELIMITER
 			+ database_name + PATH_DELIMITER
-			+ "time.txt");
-	f << "Average time to detect keypoints, per keypoint:    " << kp_time << " microseconds" << "\n";
-	f << "Average time to extract descriptors, per keypoint: " << desc_time << " microseconds" << "\n";
-	f << "Average time per image:                            " << total_time << " milliseconds" << "\n";
-	f << "Number of images:                                  " << num_images << "\n";
+			+ "time.csv");
+	f << kp_time << "," << (kp_time / num_images) << "\n"; // Average time to detect keypoints, per keypoint
 	f.close();
 
 	return 0;

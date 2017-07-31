@@ -89,8 +89,10 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = keypoints.size();
-	*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
-	*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+	if(num_keypoints > 0) {
+		*kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
+		*desc_time += duration_cast<microseconds>(desc_done - kp_done).count() / num_keypoints;
+	}
 	*total_time += duration_cast<milliseconds>(desc_done - start).count();
 }
 
