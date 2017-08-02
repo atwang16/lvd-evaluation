@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
 	verbose_output = atoi(argv[4]);
 	exclude_first_image = atoi(argv[5]);
 
-	if(argc >= 6) {
-		results = argv[5];
+	if(argc >= 7) {
+		results = argv[6];
 	}
 
 	if(is_directory(fv_database_path)) {

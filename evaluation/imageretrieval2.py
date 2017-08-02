@@ -16,7 +16,7 @@ PARAMETERS_FILE = os.path.join(os.getcwd(), "parameters.txt")
 FISHER_PARAMETERS_FILE = os.path.join(os.getcwd(), "fisher_parameters.txt")
 IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
 
-subset_seq_size = 30
+subset_seq_size = 0
 query_sample_size = 5
 generate_subset = False
 generate_descs = False
@@ -74,7 +74,9 @@ def generate_results(sequence):
             fisher_vectors.append(file)
     sorted(fisher_vectors)
 
-    if query_sample_size < len(fisher_vectors):
+    if query_sample_size == 1:
+        query_fisher_vectors = [fisher_vectors[0]]
+    elif query_sample_size < len(fisher_vectors):
         query_fisher_vectors = sample(fisher_vectors, query_sample_size)
     else:
         query_fisher_vectors = fisher_vectors
@@ -183,7 +185,7 @@ if __name__ == "__main__":
                         seq_images.append(f)
 
                 # find subset of images
-                if subset_seq_size < len(seq_images):
+                if 0 < subset_seq_size < len(seq_images):
                     subset_images = sample(seq_images, subset_seq_size)
                 else:
                     subset_images = seq_images
