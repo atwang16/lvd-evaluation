@@ -18,6 +18,7 @@
 #include <fstream>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/assign/list_of.hpp>
 #include <chrono>
 #include <algorithm>
 #include "detectors.hpp"
@@ -29,83 +30,41 @@ using namespace cv;
 
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
-
-/******************************
- * MODIFY FOR EACH DESCRIPTOR *
- ******************************/
-
-// Libraries
-#include "opencv2/xfeatures2d.hpp"
-
-// Compile-time Constants
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
-void detect(string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time) {
-	// Parameters to load from file
-	std::ifstream params(parameter_file);
-	std::string line, var, value;
-	std::vector<std::string> line_split;
+typedef void (*Detector)(Mat, vector<KeyPoint>&, string);
 
-	// parameters with default values
-	int nfeatures = 0; // 0 for SIFT implies no upper bound
-	int nOctaveLayers = 3;
-	double contrastThreshold = 0.04;
-	double edgeThreshold = 10;
-	double sigma = 1.6;
-
-	// Load parameters from file
-	while(getline(params, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		value = line_split[1];
-
-		if(var == "N_FEATURES") {
-			nfeatures = stoi(value);
-		}
-		else if(var == "N_OCTAVE_LAYERS") {
-			nOctaveLayers = stoi(value);
-		}
-		else if(var == "CONTRAST_THRESHOLD") {
-			contrastThreshold = stod(value);
-		}
-		else if(var == "EDGE_THRESHOLD") {
-			edgeThreshold = stod(value);
-		}
-		else if(var == "SIGMA") {
-			sigma = stod(value);
-		}
-	}
-
-	// Extract keypoints and compute descriptors
-	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
-	high_resolution_clock::time_point start = high_resolution_clock::now();
-	sift->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
-	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-
-	int num_keypoints = keypoints.size();
-	if(num_keypoints > 0) {
-		kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
-	}
-}
-
-/***********************
- * DO NOT MODIFY BELOW *
- ***********************/
-
+void detect(Detector f, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time);
 bool is_image(string fname);
 
 int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, output_directory, database_name;
 	bool single_image;
-	Detector det;
+	Detector f;
 
-	if(argc < 4) {
+	map<string, Detector> detmap = boost::assign::map_list_of("SHI_TOMASI", shi_tomasi)
+													   		 ("CENSURE", censure)
+															 ("MSER", mser)
+															 ("FAST", fast)
+															 ("AGAST", agast)
+															 ("DOG", difference_of_gaussians)
+															 ("HESAFF", hessian_affine)
+															 ("HARAFF", harris_affine)
+															 ("HESLAP", hessian_laplace)
+															 ("HARLAP", harris_laplace);
+
+	if(argc < 5) {
 		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
 		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination" << "\n";
 		return 1;
 	}
 
-	det = stoi(argv[1]);
+	if(detmap.count(argv[1])) {
+		f = detmap[argv[1]];
+	}
+	else {
+		f = detmap["SHI_TOMASI"]; // default selection
+	}
 	parameter_file = argv[2];
 	image_directory = argv[3];
 	output_directory = argv[4];
@@ -185,9 +144,9 @@ int main(int argc, char *argv[]) {
 					+ img_name + "_kp.csv";
 		}
 
-		// Compute descriptors
+		// Compute keypoints
 		vector<KeyPoint> keypoints;
-		detect(parameter_file, img_mat, keypoints, kp_time);
+		detect(f, parameter_file, img_mat, keypoints, kp_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
@@ -198,7 +157,7 @@ int main(int argc, char *argv[]) {
 			f_key << keypoints[i].size     << ",";
 			f_key << keypoints[i].angle    << ",";
 			f_key << keypoints[i].response << ",";
-			f_key << keypoints[i].octave   << endl;
+			f_key << keypoints[i].octave   << "\n";
 		}
 		f_key.close();
 		cout << "Keypoints stored at " << kp_path << "\n";
@@ -206,14 +165,26 @@ int main(int argc, char *argv[]) {
 		num_images++;
 	}
 
-	std::ofstream f;
-	f.open(output_directory + PATH_DELIMITER
+	std::ofstream file;
+	file.open(output_directory + PATH_DELIMITER
 			+ database_name + PATH_DELIMITER
-			+ "time.csv");
-	f << kp_time << "," << (kp_time / num_images) << "\n"; // Average time to detect keypoints, per keypoint
-	f.close();
+			+ "time.csv", std::ofstream::out | std::ofstream::app);
+	file << "Keypoint generation," << kp_time << "," << (kp_time / num_images) << "\n"; // Average time to detect keypoints, per keypoint
+	file.close();
 
 	return 0;
+}
+
+void detect(Detector f, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time) {
+	// Extract keypoints
+	high_resolution_clock::time_point start = high_resolution_clock::now();
+	(*f)(image, keypoints, parameter_file);
+	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
+
+	int num_keypoints = keypoints.size();
+	if(num_keypoints > 0) {
+		kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
+	}
 }
 
 bool is_image(string fname) {

@@ -104,7 +104,7 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 
 	// Extract keypoints and compute descriptors
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	HesAffFeatureDetector(image, keypoints);
+	hessian_affine(image, keypoints, parameter_file);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 	cout << "Found " << keypoints.size() << " keypoints.\n";
 	compute(image, keypoints, descriptors);

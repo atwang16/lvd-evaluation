@@ -7,6 +7,7 @@ APPTEST_EXECUTABLE=build_apptest/imageretrieval
 APPTEST2_EXECUTABLE=build_apptest2/imageretrieval2
 DISTTHRESH_EXECUTABLE=build_distthresh/distthresh
 FISHER_VECTOR_EXECUTABLE=build_fisher/fishervectors
+KEYPOINTS_EXECUTABLE=build_generate_keypoints/generate_keypoints
 AKAZE_EXECUTABLE=build_ds_akaze/akaze
 BRIEF_EXECUTABLE=build_ds_brief/brief
 BRISK_EXECUTABLE=build_ds_brisk/brisk

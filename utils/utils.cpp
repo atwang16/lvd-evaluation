@@ -5,11 +5,7 @@
  *      Author: austin
  */
 
-#include <opencv2/opencv.hpp>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
+#include "utils.hpp"
 
 using namespace std;
 using namespace cv;
@@ -109,4 +105,27 @@ bool is_overlapping(KeyPoint kp_1, KeyPoint kp_2, Mat hom, float threshold) {
 	proj_kp_1_2 /= proj_kp_1_2.at<float>(2);
 	float dist = sqrt(pow(kp_2.pt.x - proj_kp_1_2.at<float>(0), 2) + pow(kp_2.pt.y - proj_kp_1_2.at<float>(1), 2));
 	return dist < threshold;
+}
+
+void load_parameters(string parameter_file, map<string, double>& params) {
+	if(parameter_file != "null") {
+		std::ifstream parameter_filestream(parameter_file);
+		string line, value, var;
+		std::vector<std::string> line_split;
+
+		while(getline(parameter_filestream, line)) {
+			boost::split(line_split, line, boost::is_any_of("="));
+			var = line_split[0];
+			std::transform(var.begin(), var.end(), var.begin(), ::tolower);
+			value = line_split[1];
+
+			if(params.count(var)) {
+				params[var] = stod(value);
+			}
+		}
+	}
+}
+
+bool dtob(double d) {
+	return d < 0.5;
 }

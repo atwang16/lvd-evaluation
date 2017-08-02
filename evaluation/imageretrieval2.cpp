@@ -15,8 +15,12 @@ using namespace cv;
 using namespace std::chrono;
 using namespace boost::filesystem;
 
+#define PATH_DELIMITER "/"
+#define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
+
 bool is_fv(std::string fname);
 bool is_hidden_file(std::string fname);
+bool is_first_image(std::string fname);
 string get_cat(string desc_fname);
 float cosine_similarity(Mat vec_1, Mat vec_2);
 float euclidean_norm(Mat vec_1, Mat vec_2);
@@ -24,10 +28,10 @@ float euclidean_norm(Mat vec_1, Mat vec_2);
 int main(int argc, char *argv[]) {
 	Mat query_fv;
 	string desc_name, fv_database_path, query_cat, results = "";
-	int verbose_output = 0;
+	int verbose_output = 0, exclude_first_image = 0;
 
-	if(argc < 5) {
-		cout << "Usage ./imageretrieval desc_name query_fisher fisher_database verbose_output [results_file]\n";
+	if(argc < 6) {
+		cout << "Usage ./imageretrieval2 desc_name query_fisher fisher_database verbose_output exclude_first_image [results_file]\n";
 		return -1;
 	}
 
@@ -38,7 +42,7 @@ int main(int argc, char *argv[]) {
 	query_fv = parse_file(query_path, ',', CV_32F);
 	query_cat = get_cat(query_path);
 	vector<string> query_path_split;
-	boost::split(query_path_split, query_path, boost::is_any_of("/"));
+	boost::split(query_path_split, query_path, BOOST_PATH_DELIMITER);
 	string query_name = query_path_split.back();
 
 	// Extract all descriptors from database
@@ -46,6 +50,7 @@ int main(int argc, char *argv[]) {
 	fv_database_path = argv[3];
 
 	verbose_output = atoi(argv[4]);
+	exclude_first_image = atoi(argv[5]);
 
 	if(argc >= 6) {
 		results = argv[5];
@@ -58,13 +63,14 @@ int main(int argc, char *argv[]) {
 		for(auto& entry : boost::make_iterator_range(directory_iterator(fv_database_path), {})) {
 			db_subdirs.push_back(entry.path().string()); // appends path of file to seqs vector
 		}
+		sort(db_subdirs.begin(), db_subdirs.end());
 
 		for(auto const& cat: db_subdirs) {
-			vector<string> cat_split;
 			if(is_directory(cat)) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
-					if(is_fv(fname) && query_path != fname) { // make sure file is a descriptor and that it is not the same file
+					// make sure file is a descriptor and that it is not the same file, and exclude first image if requested
+					if(is_fv(fname) && query_path != fname && !(exclude_first_image && is_first_image(fname))) {
 						fv_database.push_back(fname);
 					}
 				}
@@ -78,12 +84,7 @@ int main(int argc, char *argv[]) {
 	for(int i = 0; i < fv_database.size(); i++) {
 		Mat db_fv = parse_file(fv_database[i], ',', CV_32F);
 
-//		cout << fv_database[i] << "\n";
-//		cout << query_fv.size() << ", " << query_fv.type() << "\n";
-//		cout << db_fv.size() << ", " << db_fv.type() << "\n\n";
-
-
-		distances.push_back(cosine_similarity(query_fv, db_fv)); // use L2 norm to calculate distances between fisher vectors
+		distances.push_back(cosine_similarity(query_fv, db_fv)); // use cosine similarity to calculate distances between fisher vectors
 	}
 
 	// Find permutation of number of correspondences
@@ -163,6 +164,12 @@ bool is_fv(string fname) {
 	vector<string> fname_split;
 	boost::split(fname_split, fname, boost::is_any_of("_,."));
 	return(fname_split[fname_split.size() - 2] == "fv");
+}
+
+bool is_first_image(std::string fname) {
+	vector<string> fname_split;
+	boost::split(fname_split, fname, boost::is_any_of("_,."));
+	return(fname_split[fname_split.size() - 3] == "001");
 }
 
 string get_cat(string fname) {

@@ -31,8 +31,6 @@ void vl_covariant_detector(Mat image, vector<KeyPoint>& keypoints, VlCovDetMetho
 	keypoints.clear();
 
 	for(int i = 0; i < numFeatures; i++) {
-//		if(i < 100)
-//			cout << feature[i].edgeScore << ", " << feature[i].peakScore << "\n";
 
 		Mat aff = Mat::zeros(3, 3, CV_32F);
 		aff.at<float>(0, 0) = feature[i].frame.a11 * feature[i].frame.a11 + feature[i].frame.a21 * feature[i].frame.a21 + 0;
@@ -56,149 +54,120 @@ void vl_covariant_detector(Mat image, vector<KeyPoint>& keypoints, VlCovDetMetho
 	}
 }
 
-
-void DogFeatureDetector(Mat image, vector<KeyPoint>& keypoints) {
+void difference_of_gaussians(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_DOG, false);
 }
 
 
-void HesLapFeatureDetector(Mat image, vector<KeyPoint>& keypoints) {
+void hessian_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HESSIAN_LAPLACE, false);
 }
 
 
-void HarLapFeatureDetector(Mat image, vector<KeyPoint>& keypoints) {
+void harris_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HARRIS_LAPLACE, false);
 }
 
 
-void HesAffFeatureDetector(Mat image, vector<KeyPoint>& keypoints) {
+void hessian_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HESSIAN_LAPLACE, true);
 }
 
 
-void HarAffFeatureDetector(Mat image, vector<KeyPoint>& keypoints) {
+void harris_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HARRIS_LAPLACE, true);
 }
 
 
-void ShiTomasiFeatureDetector(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void shi_tomasi(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+	map<string, double> params = {{"max_corners", 1000},
+								  {"quality_level", 0.01},
+								  {"min_distance", 1.0},
+								  {"block_size", 3},
+								  {"use_harris_detector", 0},
+								  {"k", 0.04}};
 
-	vector<string> params = {"max_corners", "quality_level", "min_distance", "block_size", "use_harris_detector", "k"};
-	vector<double> values = {1000, 0.01, 1.0, 3, 0, 0.04};
+	load_parameters(parameter_file, params);
 
-	if(params.size() != values.size()) {
-		cout << "Error: mismatch in number of parameters and associated values in detector. Aborting...\n";
-		return;
-	}
-
-	// Load parameters from file
-	std::ifstream parameter_filestream(parameter_file);
-	string line, line_split, var, value;
-	while(getline(parameter_filestream, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		std::transform(var.begin(), var.end(), var.begin(), ::tolower);
-		value = line_split[1];
-
-		for(int i = 0; i < params.size(); i++) {
-			if(var == params[i]) {
-				values[i] = stod(value);
-			}
-		}
-	}
-
-	Ptr< cv::GFTTDetector > shi_tomasi = GFTTDetector::create(values[0], values[1], values[2], values[3], values[4], values[5]);
+	Ptr< cv::GFTTDetector > shi_tomasi = GFTTDetector::create(params["max_corners"], params["quality_level"],
+			params["min_distance"], params["block_size"], dtob(params["use_harris_detector"]), params["k"]);
 	shi_tomasi->detect(image, keypoints);
 }
 
-void CensureFeatureDetector(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vector<string> params = {"max_size", "response_threshold", "line_threshold_projected", "line_threshold_binarized",
-			"suppress_nonmax_size"};
-	vector<double> values = {45, 30, 10, 8, 5};
 
-	if(params.size() != values.size()) {
-		cout << "Error: mismatch in number of parameters and associated values in detector. Aborting...\n";
-		return;
-	}
+void censure(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+	map<string, double> params = {{"max_size", 45},
+								  {"response_threshold", 30},
+								  {"line_threshold_projected", 10},
+								  {"line_threshold_binarized", 8},
+								  {"suppress_nonmax_size", 5}};
 
-	// Load parameters from file
-	std::ifstream parameter_filestream(parameter_file);
-	string line, line_split, var, value;
-	while(getline(parameter_filestream, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		std::transform(var.begin(), var.end(), var.begin(), ::tolower);
-		value = line_split[1];
+	load_parameters(parameter_file, params);
 
-		for(int i = 0; i < params.size(); i++) {
-			if(var == params[i]) {
-				values[i] = stod(value);
-			}
-		}
-	}
-
-	Ptr< xfeatures2d::StarDetector > censure = xfeatures2d::StarDetector::create(values[0], values[1], values[2], values[3], values[4]);
+	Ptr< xfeatures2d::StarDetector > censure = xfeatures2d::StarDetector::create(params["max_size"], params["response_threshold"],
+			params["line_threshold_projected"], params["line_threshold_binarized"], params["suppress_nonmax_size"]);
 	censure->detect(image, keypoints);
 }
 
 
-void MserFeatureDetector(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vector<string> params = {"delta", "min_area", "max_area", "max_variation", "min_diversity", "max_evoluation", "area_threshold",
-			"min_margin", "edge_blur_size"};
-	vector<double> values = {5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5};
+void mser(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+	map<string, double> params = {{"delta", 5},
+								  {"min_area", 60},
+								  {"max_area", 14400},
+								  {"max_variation", 0.25},
+								  {"min_diversity", 0.2},
+								  {"max_evolution", 200},
+								  {"area_threshold", 1.01},
+								  {"min_margin", 0.003},
+								  {"edge_blur_size", 5}};
 
-	if(params.size() != values.size()) {
-		cout << "Error: mismatch in number of parameters and associated values in detector. Aborting...\n";
-		return;
-	}
+	load_parameters(parameter_file, params);
 
-	// Load parameters from file
-	std::ifstream parameter_filestream(parameter_file);
-	string line, line_split, var, value;
-	while(getline(parameter_filestream, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		std::transform(var.begin(), var.end(), var.begin(), ::tolower);
-		value = line_split[1];
-
-		for(int i = 0; i < params.size(); i++) {
-			if(var == params[i]) {
-				values[i] = stod(value);
-			}
-		}
-	}
-
-	Ptr< cv::MSER > mser = cv::MSER::create(values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8]);
+	Ptr< cv::MSER > mser = cv::MSER::create(params["delta"], params["min_area"], params["max_area"], params["max_variation"],
+			params["min_diversity"], params["max_evoluation"], params["area_threshold"],
+			params["min_margin"], params["edge_blur_size"]);
 	mser->detect(image, keypoints);
 }
 
-void FastFeatureDetector(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vector<string> params = {"threshold", "nonmax_suppression", "type"};
-	vector<double> values = {10, 1, FastFeatureDetector::TYPE_9_16};
 
-	if(params.size() != values.size()) {
-		cout << "Error: mismatch in number of parameters and associated values in detector. Aborting...\n";
-		return;
-	}
+void fast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+	map<string, double> params = {{"fast_threshold", 10},
+								  {"nonmax_suppression", 1},
+								  {"type", FastFeatureDetector::TYPE_9_16}};
 
-	// Load parameters from file
-	std::ifstream parameter_filestream(parameter_file);
-	string line, line_split, var, value;
-	while(getline(parameter_filestream, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		std::transform(var.begin(), var.end(), var.begin(), ::tolower);
-		value = line_split[1];
+	load_parameters(parameter_file, params);
 
-		for(int i = 0; i < params.size(); i++) {
-			if(var == params[i]) {
-				values[i] = stod(value);
-			}
-		}
-	}
-
-	Ptr< cv::FastFeatureDetector > fast = cv::FastFeatureDetector::create(values[0], values[1], values[2]);
+	Ptr< cv::FastFeatureDetector > fast = FastFeatureDetector::create(params["fast_threshold"], params["nonmax_suppression"],
+			params["type"]);
 	fast->detect(image, keypoints);
 }
 
+
+void agast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+	map<string, double> params = {{"agast_threshold", 10},
+								  {"nonmax_suppression", 1},
+								  {"type", AgastFeatureDetector::OAST_9_16}};
+
+	load_parameters(parameter_file, params);
+
+	Ptr<Feature2D> agast = AgastFeatureDetector::create(params["agast_threshold"], params["nonmax_suppression"],
+			params["type"]);
+}
+
+
+Mat get_patch(Mat image, int patch_size, Point2f pt) {
+	Mat image_fl, patch;
+	if(image.type() != CV_32F) {
+		image.convertTo(image_fl, CV_32F);
+	}
+	else {
+		image_fl = image;
+	}
+	getRectSubPix(image_fl, cv::Size(patch_size, patch_size), pt, patch);
+	return patch;
+}
+
+
+Mat get_patch(Mat image, int patch_size, int center_x, int center_y) {
+	return get_patch(image, patch_size, Point2f(center_x, center_y));
+}

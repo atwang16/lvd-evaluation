@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	string desc_name, db_path, results = "", dictionary = "";
 	vector<string> desc_vec;
 	vl_size max_em_iterations = 100, num_clusters = 256;
-	int sample_size = 10000;
+	int sample_size = 10000, first_training_sequence = 1, num_training_sequences = 0;
 	float *means, *covariances, *priors;
 	vector<float> means_vec, covariances_vec, priors_vec;
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
 		var = line_split[0];
-		value = line_split.back();
+		value = line_split[1];
 		if(var == "MAX_EM_ITERATIONS") {
 			max_em_iterations = stoi(value);
 		}
@@ -67,6 +67,12 @@ int main(int argc, char *argv[]) {
 		}
 		else if(var == "NUMBER_DESCRIPTORS_TO_SAMPLE") {
 			sample_size = stoi(value);
+		}
+		else if(var == "FIRST_TRAINING_SEQUENCE") {
+			first_training_sequence = stoi(value);
+		}
+		else if(var == "NUM_TRAINING_SEQUENCES") {
+			num_training_sequences = stoi(value);
 		}
 	}
 
@@ -113,9 +119,16 @@ int main(int argc, char *argv[]) {
 	// Amalgamate descriptors into one
 	cout << "Loading data...\n";
 	for(int i = 0; i < desc_vec.size(); i++) {
-		desc_vec_mat.push_back(parse_file(desc_vec[i], ',', CV_32F));
+		Mat m = parse_file(desc_vec[i], ',', CV_32F);
+		desc_vec_mat.push_back(m);
 		num_descs += desc_vec_mat.back().rows;
 	}
+	if(num_training_sequences == 0) {
+		num_training_sequences = desc_vec.size();
+	}
+	vector<Mat> training_descs(desc_vec_mat.begin() + first_training_sequence - 1,
+			desc_vec_mat.begin() + first_training_sequence - 1 + num_training_sequences);
+
 
 	cout << num_descs << " descriptors loaded.\n";
 
@@ -125,8 +138,8 @@ int main(int argc, char *argv[]) {
 		descs = (float *)vl_malloc(sizeof(float) * (sample_size * dimension));
 		d_ptr = descs;
 		int descs_remaining = num_descs, to_sample = sample_size;
-		for(int i = 0; to_sample > 0 && i < desc_vec_mat.size(); i++) {
-			Mat m = desc_vec_mat[i];
+		for(int i = 0; to_sample > 0 && i < training_descs.size(); i++) {
+			Mat m = training_descs[i];
 			for(int j = 0; to_sample > 0 && j < m.rows; j++) {
 				if(prob(to_sample / descs_remaining)) {
 					memcpy(d_ptr, m.row(j).data, dimension * sizeof(float));

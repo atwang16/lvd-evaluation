@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import os.path
 import os
 
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
@@ -8,12 +7,16 @@ results_path = None
 image_all_db_path = None
 image_db_path = None
 descriptors_parameter_file = None
+keypoint_executable = None
 
 
-def generate_descriptors(desc, db):
-    global descriptor_executable, descriptors_parameter_file, image_db_path, results_path
-    args = [descriptor_executable, descriptors_parameter_file, image_db_path, results_path]
-    print(desc + ": " + "extracting descriptors from " + db)
+def generate_keypoints(det, desc, db):
+    global keypoint_executable, descriptors_parameter_file, image_db_path, results_path
+    args = [keypoint_executable, det, descriptors_parameter_file, image_db_path, results_path]
+    if desc is not None:
+        print(desc + ": " + "Extracting keypoints from " + db)
+    else:
+        print("Extracting keypoints from " + db)
     print("***")
     subprocess.run(args)
 
@@ -21,11 +24,17 @@ def generate_descriptors(desc, db):
 # MAIN #
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python build_database.py desc_name [database_name]")
+    if len(sys.argv) < 3:
+        print("Usage: python build_keypoints.py detector database_name [descriptor_name]")
         sys.exit(1)
 
-    desc_name = sys.argv[1]
+    detector = sys.argv[1]
+    database = sys.argv[2]
+
+    if len(sys.argv) >= 4:
+        desc_name = sys.argv[3]
+    else:
+        descriptors_parameter_file = "null"
 
     with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
         line = f.readline()
@@ -39,26 +48,18 @@ if __name__ == "__main__":
                 results_path = os.path.join(ROOT_PATH, directory)
             elif var == "DATASETS_FOLDER":
                 image_all_db_path = os.path.join(ROOT_PATH, directory)
-            elif var == "DESCRIPTORS_FOLDER":
+            elif desc_name is not None and var == "DESCRIPTORS_FOLDER":
                 descriptors_parameter_file = os.path.join(ROOT_PATH, directory, desc_name + "_parameters.txt")
-            elif var == desc_name.upper() + "_EXECUTABLE":
-                descriptor_executable = os.path.join(ROOT_PATH, directory)
+            elif var == "KEYPOINTS_EXECUTABLE":
+                keypoint_executable = os.path.join(ROOT_PATH, directory)
             line = f.readline()
 
     if results_path is None or image_all_db_path is None or \
-        descriptors_parameter_file is None or descriptor_executable is None:
+            descriptors_parameter_file is None or keypoint_executable is None:
         print("Error: could not find all of the necessary directory paths from the following file:")
         print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
         sys.exit(1)
 
-    if len(sys.argv) >= 3:
-        database = sys.argv[2]
-        image_db_path = os.path.join(image_all_db_path, database)
-        generate_descriptors(desc_name, database)
-    else:
-        all_databases = sorted(os.listdir(image_all_db_path))
-
-        for db in all_databases:
-            image_db_path = os.path.join(image_all_db_path, db)
-            if os.path.isdir(image_db_path):
-                generate_descriptors(desc_name, db)
+    image_db_path = os.path.join(image_all_db_path, database)
+    if os.path.isdir(image_db_path):
+        generate_keypoints(detector, desc_name, database)

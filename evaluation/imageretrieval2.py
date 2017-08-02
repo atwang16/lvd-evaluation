@@ -85,7 +85,7 @@ def generate_results(sequence):
     for query_fv in query_fisher_vectors:
         query_fv_path = os.path.join(results_seq_path, query_fv)
 
-        args = [apptest2_executable, desc_name, query_fv_path, results_db_path, "0", file_output]
+        args = [apptest2_executable, desc_name, query_fv_path, results_db_path, "0", "1", file_output]
 
         print(desc_name + ": " + database + " - query " + query_fv)
         sys.stdout.flush()
