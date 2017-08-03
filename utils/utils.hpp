@@ -5,8 +5,8 @@
  *      Author: austin
  */
 
-#ifndef EVALUATION_UTILS_HPP_
-#define EVALUATION_UTILS_HPP_
+#ifndef UTILS_UTILS_HPP_
+#define UTILS_UTILS_HPP_
 
 #include <opencv2/opencv.hpp>
 #include <string>
@@ -24,6 +24,6 @@ bool is_overlapping(cv::KeyPoint kp_1, cv::KeyPoint kp_2, cv::Mat hom, float thr
 
 void load_parameters(std::string parameter_file, std::map<std::string, double>& params);
 
-bool dtob(double d);
+bool dtob(double d); // double to binary
 
-#endif /* EVALUATION_UTILS_HPP_ */
+#endif /* UTILS_UTILS_HPP_ */

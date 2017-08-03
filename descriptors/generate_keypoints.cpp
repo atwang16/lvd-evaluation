@@ -21,7 +21,8 @@
 #include <boost/assign/list_of.hpp>
 #include <chrono>
 #include <algorithm>
-#include "detectors.hpp"
+
+#include "descriptors.hpp"
 
 using namespace boost::filesystem;
 using namespace std::chrono;
@@ -32,9 +33,9 @@ using namespace cv;
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
-typedef void (*Detector)(Mat, vector<KeyPoint>&, string);
+typedef void (*Detector)(Mat, KeyPointCollection&, string);
 
-void detect(Detector f, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time);
+void detect(Detector f, string parameter_file, cv::Mat image, KeyPointCollection& keypoints, long& kp_time);
 bool is_image(string fname);
 
 int main(int argc, char *argv[]) {
@@ -42,16 +43,7 @@ int main(int argc, char *argv[]) {
 	bool single_image;
 	Detector f;
 
-	map<string, Detector> detmap = boost::assign::map_list_of("SHI_TOMASI", shi_tomasi)
-													   		 ("CENSURE", censure)
-															 ("MSER", mser)
-															 ("FAST", fast)
-															 ("AGAST", agast)
-															 ("DOG", difference_of_gaussians)
-															 ("HESAFF", hessian_affine)
-															 ("HARAFF", harris_affine)
-															 ("HESLAP", hessian_laplace)
-															 ("HARLAP", harris_laplace);
+	map<string, Detector> detmap = {DETECTORS};
 
 	if(argc < 5) {
 		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
@@ -145,22 +137,38 @@ int main(int argc, char *argv[]) {
 		}
 
 		// Compute keypoints
-		vector<KeyPoint> keypoints;
-		detect(f, parameter_file, img_mat, keypoints, kp_time);
+		KeyPointCollection kp_col;
+		detect(f, parameter_file, img_mat, kp_col, kp_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
 		f_key.open(kp_path);
-		for(int i = 0; i < keypoints.size(); i++) {
-			f_key << keypoints[i].pt.x     << ",";
-			f_key << keypoints[i].pt.y     << ",";
-			f_key << keypoints[i].size     << ",";
-			f_key << keypoints[i].angle    << ",";
-			f_key << keypoints[i].response << ",";
-			f_key << keypoints[i].octave   << "\n";
+		for(int i = 0; i < kp_col.keypoints.size(); i++) {
+			f_key << kp_col.keypoints[i].pt.x     << ",";
+			f_key << kp_col.keypoints[i].pt.y     << ",";
+			f_key << kp_col.keypoints[i].size     << ",";
+			f_key << kp_col.keypoints[i].angle    << ",";
+			f_key << kp_col.keypoints[i].response << ",";
+			f_key << kp_col.keypoints[i].octave   << ",";
+			if(kp_col.affine.size() > 0) {
+				f_key << kp_col.affine[i].at<float>(0,0) << ",";
+				f_key << kp_col.affine[i].at<float>(0,1) << ",";
+				f_key << kp_col.affine[i].at<float>(0,2) << ",";
+				f_key << kp_col.affine[i].at<float>(1,0) << ",";
+				f_key << kp_col.affine[i].at<float>(1,1) << ",";
+				f_key << kp_col.affine[i].at<float>(1,2) << "\n";
+			}
+			else {
+				f_key << 1 << ",";
+				f_key << 0 << ",";
+				f_key << 0 << ",";
+				f_key << 0 << ",";
+				f_key << 1 << ",";
+				f_key << 0 << "\n";
+			}
 		}
 		f_key.close();
-		cout << "Keypoints stored at " << kp_path << "\n";
+		cout << "Keypoints stored at " << kp_path << "\n\n";
 
 		num_images++;
 	}
@@ -169,19 +177,19 @@ int main(int argc, char *argv[]) {
 	file.open(output_directory + PATH_DELIMITER
 			+ database_name + PATH_DELIMITER
 			+ "time.csv", std::ofstream::out | std::ofstream::app);
-	file << "Keypoint generation," << kp_time << "," << (kp_time / num_images) << "\n"; // Average time to detect keypoints, per keypoint
+	file << "Keypoint generation (mus)," << kp_time << "," << num_images << "\n"; // Average time to detect keypoints, per keypoint
 	file.close();
 
 	return 0;
 }
 
-void detect(Detector f, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, long& kp_time) {
+void detect(Detector f, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, long& kp_time) {
 	// Extract keypoints
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	(*f)(image, keypoints, parameter_file);
+	(*f)(image, kp_col, parameter_file);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 
-	int num_keypoints = keypoints.size();
+	int num_keypoints = kp_col.keypoints.size();
 	if(num_keypoints > 0) {
 		kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
 	}

@@ -8,45 +8,64 @@
 #ifndef UTILS_DETECTORS_HPP_
 #define UTILS_DETECTORS_HPP_
 
-#include <opencv2/opencv.hpp>
+#ifndef UTILS_UTILS_HPP_
+#include "utils.hpp"
+#endif
+
 #include <cmath>
 #include <boost/assign/list_of.hpp>
 #include "opencv2/xfeatures2d.hpp"
 #include <map>
-#include "utils.hpp"
 
 extern "C" {
 #include <vl/covdet.h>
 }
 
-using namespace std;
-using namespace cv;
+struct KeyPointCollection {
+	std::vector<cv::KeyPoint> keypoints;
+	std::vector<cv::Mat> affine;
+};
 
 #define PI 3.14159
 
+#define DETECTORS {"SHI_TOMASI", shi_tomasi},       \
+                  {"CENSURE", censure},             \
+				  {"MSER", mser},                   \
+				  {"FAST", fast},                   \
+				  {"AGAST", agast},                 \
+				  {"DOG", difference_of_gaussians}, \
+				  {"HESAFF", hessian_affine},       \
+				  {"HARAFF", harris_affine},        \
+				  {"HESLAP", hessian_laplace},      \
+				  {"HARLAP", harris_laplace},       \
+				  {"SIFT", sift}
 
-void difference_of_gaussians(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+#define detector_args cv::Mat image, KeyPointCollection& keypoints, std::string parameter_file
 
-void hessian_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+cv::Mat get_patch(cv::Mat image, int patch_size, cv::Point2f pt, cv::Mat affine);
 
-void harris_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+cv::Mat get_patch(cv::Mat image, int patch_size, int center_x, int center_y, cv::Mat affine);
 
-void hessian_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void difference_of_gaussians(detector_args);
 
-void harris_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void hessian_laplace(detector_args);
 
-void shi_tomasi(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void harris_laplace(detector_args);
 
-void censure(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void hessian_affine(detector_args);
 
-void mser(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void harris_affine(detector_args);
 
-void fast(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void shi_tomasi(detector_args);
 
-void agast(Mat image, vector<KeyPoint>& keypoints, string parameter_file);
+void censure(detector_args);
 
-Mat get_patch(Mat image, int patch_size, Point2f pt);
+void mser(detector_args);
 
-Mat get_patch(Mat image, int patch_size, int center_x, int center_y);
+void fast(detector_args);
+
+void agast(detector_args);
+
+void sift(detector_args);
 
 #endif /* UTILS_DETECTORS_HPP_ */

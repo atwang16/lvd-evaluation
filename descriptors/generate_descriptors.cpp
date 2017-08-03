@@ -1,13 +1,9 @@
 /*
- * cslbp.cpp
+ * generate_descriptors.cpp
  *
- *  Created on: Jul 25, 2017
+ *  Created on: Aug 3, 2017
  *      Author: Austin Wang
  *      Project: A Comparative Study of Local Visual Descriptors
- *      Descriptor: CS-LBP
- *      Descriptor Citation:  TBD
- *
- *  This source code extracts the CS-LBP descriptor from images.
  */
 
 #include <opencv2/opencv.hpp>
@@ -19,7 +15,6 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <algorithm>
-#include "detectors.hpp"
 
 using namespace boost::filesystem;
 using namespace std::chrono;
@@ -28,31 +23,17 @@ using namespace std;
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 
+void compute(string descriptor, string parameter_file, cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, long* desc_time);
+
 /******************************
  * MODIFY FOR EACH DESCRIPTOR *
  ******************************/
 
+// Libraries
+#include "opencv2/xfeatures2d.hpp"
+
 // Compile-time Constants
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
-
-void compute(cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, float const threshold, int const patch_size) {
-	descriptors = cv::Mat::zeros(keypoints.size(), 16, CV_8U);
-
-	for(int i = 0; i < keypoints.size(); i++) {
-		cv::Mat patch = get_patch(image, patch_size, keypoints[i].pt);
-
-		for(int x = 1; x < patch.cols - 1; x++) {
-			for(int y = 1; y < patch.rows - 1; y++) {
-				int a = ((patch.at<float>(x,y+1)   - patch.at<float>(x,y-1)   > threshold) * 1);
-				int b = ((patch.at<float>(x+1,y+1) - patch.at<float>(x-1,y-1) > threshold) * 2);
-				int c = ((patch.at<float>(x+1,y)   - patch.at<float>(x-1,y)   > threshold) * 4);
-				int d = ((patch.at<float>(x+1,y-1) - patch.at<float>(x-1,y+1) > threshold) * 8);
-				descriptors.at<uchar>(i, a+b+c+d)++;
-			}
-		}
-	}
-}
-
 
 void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors,
 		long* kp_time, long* desc_time, long* total_time) {
@@ -61,9 +42,12 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 	std::string line, var, value;
 	std::vector<std::string> line_split;
 
-	// parameters with default values; modify for each descriptor
-	float threshold = 0.1;
-	int patch_size = 20;
+	// parameters with default values
+	int nfeatures = 0; // 0 for SIFT implies no upper bound
+	int nOctaveLayers = 3;
+	double contrastThreshold = 0.04;
+	double edgeThreshold = 10;
+	double sigma = 1.6;
 
 	// Load parameters from file
 	while(getline(params, line)) {
@@ -71,22 +55,30 @@ void detectAndCompute(string descriptor, string parameter_file, cv::Mat image, v
 		var = line_split[0];
 		value = line_split.back();
 
-		if(var == "THRESHOLD") {
-			threshold = stof(value);
+		if(var == "N_FEATURES") {
+			nfeatures = stoi(value);
 		}
-		else if(var == "PATCH_SIZE") {
-			patch_size = stoi(value);
+		else if(var == "N_OCTAVE_LAYERS") {
+			nOctaveLayers = stoi(value);
+		}
+		else if(var == "CONTRAST_THRESHOLD") {
+			contrastThreshold = stod(value);
+		}
+		else if(var == "EDGE_THRESHOLD") {
+			edgeThreshold = stod(value);
+		}
+		else if(var == "SIGMA") {
+			sigma = stod(value);
 		}
 	}
 
 	// Extract keypoints and compute descriptors
+	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	shi_tomasi(image, keypoints, parameter_file);
+	sift->detectAndCompute(image, cv::noArray(), keypoints, cv::noArray(), false);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
-	cout << "Found " << keypoints.size() << " keypoints.\n";
-	compute(image, keypoints, descriptors, threshold, patch_size);
+	sift->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
-	cout << "Computed descriptors.\n";
 
 	int num_keypoints = keypoints.size();
 	if(num_keypoints > 0) {
@@ -251,6 +243,52 @@ int main(int argc, char *argv[]) {
 	f.close();
 
 	return 0;
+}
+
+void compute(string descriptor, string parameter_file, cv::Mat image, vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, double& desc_time) {
+	// Parameters to load from file
+	std::ifstream params(parameter_file);
+	std::string line, var, value;
+	std::vector<std::string> line_split;
+
+	// parameters with default values
+	int nfeatures = 0; // 0 for SIFT implies no upper bound
+	int nOctaveLayers = 3;
+	double contrastThreshold = 0.04;
+	double edgeThreshold = 10;
+	double sigma = 1.6;
+
+	// Load parameters from file
+	while(getline(params, line)) {
+		boost::split(line_split, line, boost::is_any_of("="));
+		var = line_split[0];
+		value = line_split.back();
+
+		if(var == "N_FEATURES") {
+			nfeatures = stoi(value);
+		}
+		else if(var == "N_OCTAVE_LAYERS") {
+			nOctaveLayers = stoi(value);
+		}
+		else if(var == "CONTRAST_THRESHOLD") {
+			contrastThreshold = stod(value);
+		}
+		else if(var == "EDGE_THRESHOLD") {
+			edgeThreshold = stod(value);
+		}
+		else if(var == "SIGMA") {
+			sigma = stod(value);
+		}
+	}
+
+	// Extract keypoints and compute descriptors
+	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma);
+	high_resolution_clock::time_point start = high_resolution_clock::now();
+	sift->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
+	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
+
+	int num_keypoints = keypoints.size();
+	desc_time += (double)duration_cast<microseconds>(desc_done - start).count() / num_keypoints;
 }
 
 bool is_image(string fname) {

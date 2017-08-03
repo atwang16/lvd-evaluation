@@ -12,11 +12,31 @@ using namespace std;
 using namespace cv;
 
 
-void vl_covariant_detector(Mat image, vector<KeyPoint>& keypoints, VlCovDetMethod type, bool affine_transformation) {
+Mat get_patch(Mat image, int patch_size, Point2f pt, Mat affine) {
+	Mat image_fl, aff_image = Mat::zeros(image.rows, image.cols, CV_32F), patch;
+	if(image.type() != CV_32F) {
+		image.convertTo(image_fl, CV_32F);
+	}
+	else {
+		image_fl = image;
+	}
+	warpAffine( image_fl, aff_image, affine, aff_image.size() );
+	getRectSubPix(aff_image, cv::Size(patch_size, patch_size), pt, patch);
+	return patch;
+}
+
+
+Mat get_patch(Mat image, int patch_size, int center_x, int center_y, Mat affine) {
+	return get_patch(image, patch_size, Point2f(center_x, center_y), affine);
+}
+
+
+void vl_covariant_detector(Mat image, KeyPointCollection& kp_col, VlCovDetMethod type, bool affine_transformation, float peak_threshold) {
 	VlCovDet * covdet = vl_covdet_new(type);
 	Mat image_fl;
 	image.convertTo(image_fl, CV_32F);
 
+	vl_covdet_set_peak_threshold(covdet, peak_threshold);
 	vl_covdet_put_image(covdet, (float *)image_fl.data, image.rows, image.cols);
 	vl_covdet_detect(covdet);
 
@@ -28,7 +48,7 @@ void vl_covariant_detector(Mat image, vector<KeyPoint>& keypoints, VlCovDetMetho
 	vl_size numFeatures = vl_covdet_get_num_features(covdet);
 	VlCovDetFeature *feature = (VlCovDetFeature *)vl_covdet_get_features(covdet);
 
-	keypoints.clear();
+	kp_col.keypoints.clear();
 
 	for(int i = 0; i < numFeatures; i++) {
 
@@ -49,37 +69,65 @@ void vl_covariant_detector(Mat image, vector<KeyPoint>& keypoints, VlCovDetMetho
 		double angle_deg = angle_rad / PI * 180 + 180;
 
 		if(size > 50) {
-			keypoints.push_back(KeyPoint(feature[i].frame.x, feature[i].frame.y, size, angle_deg));
+			kp_col.keypoints.push_back(KeyPoint(feature[i].frame.x, feature[i].frame.y, size, angle_deg));
+			Mat a = Mat::zeros(2, 3, CV_32F);
+			a.at<float>(0, 0) = feature[i].frame.a11;
+			a.at<float>(0, 1) = feature[i].frame.a12;
+			a.at<float>(0, 2) = 0;
+			a.at<float>(1, 0) = feature[i].frame.a21;
+			a.at<float>(1, 1) = feature[i].frame.a22;
+			a.at<float>(1, 2) = 0;
+			kp_col.affine.push_back(a);
 		}
 	}
 }
 
-void difference_of_gaussians(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_DOG, false);
+void difference_of_gaussians(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"peak_threshold", 0.0}};
+
+	load_parameters(parameter_file, params);
+
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_DOG, false, params["peak_threshold"]);
 }
 
 
-void hessian_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HESSIAN_LAPLACE, false);
+void hessian_laplace(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"peak_threshold", 0.0}};
+
+	load_parameters(parameter_file, params);
+
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, false, params["peak_threshold"]);
 }
 
 
-void harris_laplace(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HARRIS_LAPLACE, false);
+void harris_laplace(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"peak_threshold", 0.0}};
+
+	load_parameters(parameter_file, params);
+
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, false, params["peak_threshold"]);
 }
 
 
-void hessian_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HESSIAN_LAPLACE, true);
+void hessian_affine(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"peak_threshold", 0.0}};
+
+	load_parameters(parameter_file, params);
+
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, true, params["peak_threshold"]);
 }
 
 
-void harris_affine(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
-	vl_covariant_detector(image, keypoints, VL_COVDET_METHOD_HARRIS_LAPLACE, true);
+void harris_affine(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"peak_threshold", 0.0}};
+
+	load_parameters(parameter_file, params);
+
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, true, params["peak_threshold"]);
 }
 
 
-void shi_tomasi(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void shi_tomasi(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"max_corners", 1000},
 								  {"quality_level", 0.01},
 								  {"min_distance", 1.0},
@@ -91,11 +139,11 @@ void shi_tomasi(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 
 	Ptr< cv::GFTTDetector > shi_tomasi = GFTTDetector::create(params["max_corners"], params["quality_level"],
 			params["min_distance"], params["block_size"], dtob(params["use_harris_detector"]), params["k"]);
-	shi_tomasi->detect(image, keypoints);
+	shi_tomasi->detect(image, kp_col.keypoints);
 }
 
 
-void censure(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void censure(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"max_size", 45},
 								  {"response_threshold", 30},
 								  {"line_threshold_projected", 10},
@@ -106,11 +154,11 @@ void censure(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 
 	Ptr< xfeatures2d::StarDetector > censure = xfeatures2d::StarDetector::create(params["max_size"], params["response_threshold"],
 			params["line_threshold_projected"], params["line_threshold_binarized"], params["suppress_nonmax_size"]);
-	censure->detect(image, keypoints);
+	censure->detect(image, kp_col.keypoints);
 }
 
 
-void mser(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void mser(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"delta", 5},
 								  {"min_area", 60},
 								  {"max_area", 14400},
@@ -126,11 +174,11 @@ void mser(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 	Ptr< cv::MSER > mser = cv::MSER::create(params["delta"], params["min_area"], params["max_area"], params["max_variation"],
 			params["min_diversity"], params["max_evoluation"], params["area_threshold"],
 			params["min_margin"], params["edge_blur_size"]);
-	mser->detect(image, keypoints);
+	mser->detect(image, kp_col.keypoints);
 }
 
 
-void fast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void fast(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"fast_threshold", 10},
 								  {"nonmax_suppression", 1},
 								  {"type", FastFeatureDetector::TYPE_9_16}};
@@ -139,11 +187,11 @@ void fast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 
 	Ptr< cv::FastFeatureDetector > fast = FastFeatureDetector::create(params["fast_threshold"], params["nonmax_suppression"],
 			params["type"]);
-	fast->detect(image, keypoints);
+	fast->detect(image, kp_col.keypoints);
 }
 
 
-void agast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
+void agast(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"agast_threshold", 10},
 								  {"nonmax_suppression", 1},
 								  {"type", AgastFeatureDetector::OAST_9_16}};
@@ -152,22 +200,21 @@ void agast(Mat image, vector<KeyPoint>& keypoints, string parameter_file) {
 
 	Ptr<Feature2D> agast = AgastFeatureDetector::create(params["agast_threshold"], params["nonmax_suppression"],
 			params["type"]);
+	agast->detect(image, kp_col.keypoints);
 }
 
 
-Mat get_patch(Mat image, int patch_size, Point2f pt) {
-	Mat image_fl, patch;
-	if(image.type() != CV_32F) {
-		image.convertTo(image_fl, CV_32F);
-	}
-	else {
-		image_fl = image;
-	}
-	getRectSubPix(image_fl, cv::Size(patch_size, patch_size), pt, patch);
-	return patch;
+void sift(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"n_features", 0},
+								  {"n_octave_layers", 3},
+								  {"contrast_threshold", 0.04},
+								  {"edge_threshold", 10},
+								  {"sigma", 1.6}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(params["n_features"], params["n_octave_layers"],
+			params["contrast_threshold"], params["edge_threshold"], params["sigma"]);
+	sift->detect(image, kp_col.keypoints);
 }
 
-
-Mat get_patch(Mat image, int patch_size, int center_x, int center_y) {
-	return get_patch(image, patch_size, Point2f(center_x, center_y));
-}

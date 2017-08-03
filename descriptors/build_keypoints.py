@@ -8,15 +8,15 @@ image_all_db_path = None
 image_db_path = None
 descriptors_parameter_file = None
 keypoint_executable = None
-
+desc_name = None
 
 def generate_keypoints(det, desc, db):
     global keypoint_executable, descriptors_parameter_file, image_db_path, results_path
-    args = [keypoint_executable, det, descriptors_parameter_file, image_db_path, results_path]
+    args = [keypoint_executable, det.upper(), descriptors_parameter_file, image_db_path, results_path]
     if desc is not None:
-        print(desc + ": " + "Extracting keypoints from " + db)
+        print(det + ": " + "Extracting keypoints from " + db)
     else:
-        print("Extracting keypoints from " + db)
+        print(det + "Extracting keypoints for " + desc + " from " + db)
     print("***")
     subprocess.run(args)
 
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     if len(sys.argv) >= 4:
         desc_name = sys.argv[3]
     else:
+        desc_name = detector
         descriptors_parameter_file = "null"
 
     with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
@@ -48,7 +49,7 @@ if __name__ == "__main__":
                 results_path = os.path.join(ROOT_PATH, directory)
             elif var == "DATASETS_FOLDER":
                 image_all_db_path = os.path.join(ROOT_PATH, directory)
-            elif desc_name is not None and var == "DESCRIPTORS_FOLDER":
+            elif descriptors_parameter_file is None and var == "DESCRIPTORS_FOLDER":
                 descriptors_parameter_file = os.path.join(ROOT_PATH, directory, desc_name + "_parameters.txt")
             elif var == "KEYPOINTS_EXECUTABLE":
                 keypoint_executable = os.path.join(ROOT_PATH, directory)
@@ -59,6 +60,8 @@ if __name__ == "__main__":
         print("Error: could not find all of the necessary directory paths from the following file:")
         print(" ", os.path.join(ROOT_PATH, "project_structure.txt"))
         sys.exit(1)
+
+    results_path = os.path.join(results_path, desc_name)
 
     image_db_path = os.path.join(image_all_db_path, database)
     if os.path.isdir(image_db_path):
