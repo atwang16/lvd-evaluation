@@ -11,6 +11,7 @@
  *  This source code generates keypoints using a chosen keypoint detector and outputs the data to a file.
  */
 
+#include "detectors.hpp"
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <iostream>
@@ -22,8 +23,6 @@
 #include <chrono>
 #include <algorithm>
 
-#include "descriptors.hpp"
-
 using namespace boost::filesystem;
 using namespace std::chrono;
 using namespace std;
@@ -33,17 +32,15 @@ using namespace cv;
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
-typedef void (*Detector)(Mat, KeyPointCollection&, string);
-
-void detect(Detector f, string parameter_file, cv::Mat image, KeyPointCollection& keypoints, long& kp_time);
+void detect(Detector f, string parameter_file, cv::Mat image, KeyPointCollection& keypoints, double& kp_time);
 bool is_image(string fname);
 
 int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, output_directory, database_name;
 	bool single_image;
-	Detector f;
+	Detector d;
 
-	map<string, Detector> detmap = {DETECTORS};
+	map<string, Detector> detmap = {DETECTOR_MAP};
 
 	if(argc < 5) {
 		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
@@ -52,10 +49,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	if(detmap.count(argv[1])) {
-		f = detmap[argv[1]];
+		d = detmap[argv[1]];
 	}
 	else {
-		f = detmap["SHI_TOMASI"]; // default selection
+		cout << "Error: detector not available. Aborting...\n";
+		return 1;
 	}
 	parameter_file = argv[2];
 	image_directory = argv[3];
@@ -66,7 +64,6 @@ int main(int argc, char *argv[]) {
 
 	if(is_directory(image_directory)) {
 		single_image = false;
-		cout << "Database: " << image_directory << "\n";
 		vector<string> img_dir_split;
 		boost::split(img_dir_split, image_directory, BOOST_PATH_DELIMITER);
 		database_name = img_dir_split.back();
@@ -108,7 +105,8 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	long kp_time = 0;
+	double kp_time = 0;
+	long num_keypoints = 0;
 	int num_images = 0;
 
 	for(auto const& img : images) {
@@ -138,7 +136,7 @@ int main(int argc, char *argv[]) {
 
 		// Compute keypoints
 		KeyPointCollection kp_col;
-		detect(f, parameter_file, img_mat, kp_col, kp_time);
+		detect(d, parameter_file, img_mat, kp_col, kp_time);
 
 		// Open the keypoint file for saving
 		std::ofstream f_key;
@@ -171,27 +169,28 @@ int main(int argc, char *argv[]) {
 		cout << "Keypoints stored at " << kp_path << "\n\n";
 
 		num_images++;
+		num_keypoints += kp_col.keypoints.size();
 	}
 
 	std::ofstream file;
 	file.open(output_directory + PATH_DELIMITER
 			+ database_name + PATH_DELIMITER
 			+ "time.csv", std::ofstream::out | std::ofstream::app);
-	file << "Keypoint generation (mus)," << kp_time << "," << num_images << "\n"; // Average time to detect keypoints, per keypoint
+	file << "Keypoint generation (mus)," << kp_time << "," << num_images << "," << num_keypoints << "\n"; // Average time to detect keypoints, per keypoint
 	file.close();
 
 	return 0;
 }
 
-void detect(Detector f, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, long& kp_time) {
+void detect(Detector d, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, double& kp_time) {
 	// Extract keypoints
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	(*f)(image, kp_col, parameter_file);
+	(*d)(image, kp_col, parameter_file);
 	high_resolution_clock::time_point kp_done = high_resolution_clock::now();
 
 	int num_keypoints = kp_col.keypoints.size();
 	if(num_keypoints > 0) {
-		kp_time += duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
+		kp_time += (double)duration_cast<microseconds>(kp_done - start).count() / num_keypoints;
 	}
 }
 

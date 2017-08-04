@@ -8,14 +8,11 @@
 #ifndef UTILS_DETECTORS_HPP_
 #define UTILS_DETECTORS_HPP_
 
-#ifndef UTILS_UTILS_HPP_
 #include "utils.hpp"
-#endif
-
-#include <cmath>
-#include <boost/assign/list_of.hpp>
-#include "opencv2/xfeatures2d.hpp"
+#include <opencv2/opencv.hpp>
+#include <opencv2/xfeatures2d.hpp>
 #include <map>
+#include <cmath>
 
 extern "C" {
 #include <vl/covdet.h>
@@ -26,19 +23,21 @@ struct KeyPointCollection {
 	std::vector<cv::Mat> affine;
 };
 
+typedef void (*Detector)(cv::Mat, KeyPointCollection&, std::string);
+
 #define PI 3.14159
 
-#define DETECTORS {"SHI_TOMASI", shi_tomasi},       \
-                  {"CENSURE", censure},             \
-				  {"MSER", mser},                   \
-				  {"FAST", fast},                   \
-				  {"AGAST", agast},                 \
-				  {"DOG", difference_of_gaussians}, \
-				  {"HESAFF", hessian_affine},       \
-				  {"HARAFF", harris_affine},        \
-				  {"HESLAP", hessian_laplace},      \
-				  {"HARLAP", harris_laplace},       \
-				  {"SIFT", sift}
+#define DETECTOR_MAP {"shi_tomasi", shi_tomasi},       \
+					 {"censure", censure},             \
+					 {"mser", mser},                   \
+					 {"fast", fast},                   \
+					 {"agast", agast},                 \
+					 {"dog", difference_of_gaussians}, \
+					 {"hesaff", hessian_affine},       \
+					 {"haraff", harris_affine},        \
+					 {"heslap", hessian_laplace},      \
+					 {"harlap", harris_laplace},       \
+					 {"sift", sift}
 
 #define detector_args cv::Mat image, KeyPointCollection& keypoints, std::string parameter_file
 

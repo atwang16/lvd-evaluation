@@ -12,7 +12,7 @@ desc_name = None
 
 def generate_keypoints(det, desc, db):
     global keypoint_executable, descriptors_parameter_file, image_db_path, results_path
-    args = [keypoint_executable, det.upper(), descriptors_parameter_file, image_db_path, results_path]
+    args = [keypoint_executable, det, descriptors_parameter_file, image_db_path, results_path]
     if desc is not None:
         print(det + ": " + "Extracting keypoints from " + db)
     else:
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     if len(sys.argv) >= 4:
         desc_name = sys.argv[3]
     else:
-        desc_name = detector
+        desc_name = detector.lower()
         descriptors_parameter_file = "null"
 
     with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:

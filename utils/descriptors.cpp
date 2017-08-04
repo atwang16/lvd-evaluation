@@ -5,6 +5,9 @@
  *      Author: austin
  */
 
+//#include "descriptors.hpp"
+
+#include "detectors.hpp"
 #include "descriptors.hpp"
 
 using namespace boost::filesystem;
@@ -12,7 +15,7 @@ using namespace std;
 using namespace cv;
 
 
-void akaze(cv::Mat image, vector<KeyPoint>& keypoints, cv::Mat& descriptors, std::string parameter_file) {
+void akaze(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"descriptor_type", cv::AKAZE::DESCRIPTOR_MLDB},
 								  {"descriptor_size", 0},
 								  {"descriptor_channels", 3},
@@ -29,7 +32,7 @@ void akaze(cv::Mat image, vector<KeyPoint>& keypoints, cv::Mat& descriptors, std
 	akaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, false);
 }
 
-void brief(cv::Mat image, vector<KeyPoint>& keypoints, cv::Mat& descriptors, std::string parameter_file) {
+void brief(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"bytes", 32},
 								  {"use_orientation", 0}};
 
@@ -40,7 +43,7 @@ void brief(cv::Mat image, vector<KeyPoint>& keypoints, cv::Mat& descriptors, std
 	brief->compute(image, keypoints, descriptors);
 }
 
-void sift(cv::Mat image, vector<KeyPoint>& keypoints, cv::Mat& descriptors, std::string parameter_file) {
+void sift(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"n_features", 0},
 								  {"n_octave_layers", 3},
 								  {"contrast_threshold", 0.04},
