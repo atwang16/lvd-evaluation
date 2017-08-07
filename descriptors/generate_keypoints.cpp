@@ -39,7 +39,6 @@ int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, output_directory, database_name;
 	bool single_image;
 	Detector d;
-
 	map<string, Detector> detmap = {DETECTOR_MAP};
 
 	if(argc < 5) {

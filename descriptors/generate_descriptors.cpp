@@ -124,6 +124,7 @@ int main(int argc, char *argv[]) {
 	int num_images = 0, num_keypoints = 0;
 
 	int i = 0;
+
 	for(string img_p : image_paths) {
 		cout << "Extracting descriptors for " << img_p << "\n";
 		string kp_p, kp_name;
@@ -136,9 +137,9 @@ int main(int argc, char *argv[]) {
 			else {
 				continue;
 			}
-		} while(kp_name.find(img_name) != string::npos);
+		} while(kp_name.find(img_name) == string::npos);
 
-		if(i >= keypoint_paths.size()) {
+		if(i > keypoint_paths.size()) {
 			break;
 		}
 

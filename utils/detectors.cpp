@@ -20,7 +20,7 @@ Mat get_patch(Mat image, int patch_size, Point2f pt, Mat affine) {
 	else {
 		image_fl = image;
 	}
-	warpAffine( image_fl, aff_image, affine, aff_image.size() );
+	warpAffine(image_fl, aff_image, affine, aff_image.size());
 	getRectSubPix(aff_image, cv::Size(patch_size, patch_size), pt, patch);
 	return patch;
 }
@@ -70,14 +70,14 @@ void vl_covariant_detector(Mat image, KeyPointCollection& kp_col, VlCovDetMethod
 
 		if(size > 50) {
 			kp_col.keypoints.push_back(KeyPoint(feature[i].frame.x, feature[i].frame.y, size, angle_deg));
-			Mat a = Mat::zeros(2, 3, CV_32F);
-			a.at<float>(0, 0) = feature[i].frame.a11;
-			a.at<float>(0, 1) = feature[i].frame.a12;
-			a.at<float>(0, 2) = 0;
-			a.at<float>(1, 0) = feature[i].frame.a21;
-			a.at<float>(1, 1) = feature[i].frame.a22;
-			a.at<float>(1, 2) = 0;
-			kp_col.affine.push_back(a);
+			Mat trans = Mat::zeros(2, 3, CV_32F);
+			trans.at<float>(0, 0) = feature[i].frame.a11;
+			trans.at<float>(0, 1) = feature[i].frame.a12;
+			trans.at<float>(0, 2) = 0;
+			trans.at<float>(1, 0) = feature[i].frame.a21;
+			trans.at<float>(1, 1) = feature[i].frame.a22;
+			trans.at<float>(1, 2) = 0;
+			kp_col.affine.push_back(trans);
 		}
 	}
 }
@@ -203,6 +203,52 @@ void agast(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	agast->detect(image, kp_col.keypoints);
 }
 
+void brisk(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"agast_threshold", 30},
+								  {"n_octaves", 3},
+								  {"pattern_scale", 1.0}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> brisk =
+			cv::BRISK::create(params["agast_threshold"], params["n_octaves"], params["pattern_scale"]);
+	brisk->detect(image, kp_col.keypoints);
+}
+
+void kaze(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"extended", 0},
+								  {"upright", 0},
+								  {"threshold", 0.001f},
+								  {"n_octaves", 4},
+								  {"n_octave_layers", 4},
+								  {"diffusivity", cv::KAZE::DIFF_PM_G2}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> kaze =
+			cv::KAZE::create(dtob(params["extended"]), dtob(params["upright"]), params["threshold"],
+					params["n_octaves"], params["n_octave_layers"], params["diffusivity"]);
+	kaze->detect(image, kp_col.keypoints);
+}
+
+void orb(cv::Mat image, KeyPointCollection& kp_col, std::string parameter_file) {
+	map<string, double> params = {{"n_features", 10000},
+								  {"scale_factor", 1.2},
+								  {"n_levels", 8},
+								  {"edge_threshold", 31},
+								  {"first_level", 0},
+								  {"wta_k", 2},
+								  {"score_type", cv::ORB::HARRIS_SCORE},
+								  {"patch_size", 31},
+								  {"fast_threshold", 20}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> orb = cv::ORB::create(params["n_features"], params["scale_factor"],
+			params["n_levels"],params["edge_thresh"], params["first_level"], params["wta_k"],
+			params["score_type"], params["patch_size"], params["fast_thresh"]);
+	orb->detect(image, kp_col.keypoints);
+}
 
 void sift(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	map<string, double> params = {{"n_features", 0},
@@ -216,5 +262,34 @@ void sift(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(params["n_features"], params["n_octave_layers"],
 			params["contrast_threshold"], params["edge_threshold"], params["sigma"]);
 	sift->detect(image, kp_col.keypoints);
+}
+
+void surf(cv::Mat image, KeyPointCollection& kp_col, std::string parameter_file) {
+	map<string, double> params = {{"hessian_threshold", 100},
+								  {"n_octaves", 4},
+								  {"n_octave_layers", 3},
+								  {"extended", 0}};
+	bool upright = false;
+
+	load_parameters(parameter_file, params);
+	params["upright"] = 0;
+
+	cv::Ptr<cv::Feature2D> surf = cv::xfeatures2d::SURF::create(params["hessian_threshold"], params["n_octaves"],
+			params["n_octave_layers"], dtob(params["extended"]), upright);
+	surf->detect(image, kp_col.keypoints);
+}
+
+void usurf(cv::Mat image, KeyPointCollection& kp_col, std::string parameter_file) {
+	map<string, double> params = {{"hessian_threshold", 100},
+								  {"n_octaves", 4},
+								  {"n_octave_layers", 3},
+								  {"extended", 0}};
+	bool upright = true;
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> usurf = cv::xfeatures2d::SURF::create(params["hessian_threshold"], params["n_octaves"],
+			params["n_octave_layers"], dtob(params["extended"]), upright);
+	usurf->detect(image, kp_col.keypoints);
 }
 
