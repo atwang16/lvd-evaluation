@@ -182,8 +182,7 @@ int main(int argc, char *argv[]) {
 					+ database_name + PATH_DELIMITER
 					+ seq_name + PATH_DELIMITER
 					+ img_name + "_kp.csv";
-		}
-
+		};;
 		// Compute descriptors
 		cv::Mat descriptors;
 		vector<cv::KeyPoint> keypoints;

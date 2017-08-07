@@ -21,6 +21,7 @@ query_sample_size = 5
 generate_subset = False
 generate_descs = False
 generate_fishers = False
+results_only = False
 mean_ave_prec = 0.0
 success_rate = 0.0
 num_queries = 0
@@ -99,7 +100,7 @@ def generate_results(sequence):
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python imageretrieval2.py desc_name database [-generate_subset] [-generate_descriptors] "
-              "[-generate_fishervectors]")
+              "[-generate_fishervectors] [-results_only]")
         sys.exit(1)
 
     desc_name = sys.argv[1]
@@ -142,6 +143,8 @@ if __name__ == "__main__":
             generate_fishers = True
         elif sys.argv[arg_index] == "-generate_fishervectors":
             generate_fishers = True
+        elif sys.argv[arg_index] == "-results_only" and not(generate_subset or generate_descs or generate_fishers):
+            results_only = True
         arg_index += 1
     results_db_path = os.path.join(results_path, desc_name, database)
 
@@ -204,9 +207,10 @@ if __name__ == "__main__":
     file_output = os.path.join(results_db_path, desc_name + "_" + database[0:3] + "_imageretrieval2.csv")
     result_sequences = sorted(os.listdir(results_db_path))
 
-    for r_seq in result_sequences:
-        if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":
-            generate_results(r_seq)
+    if not results_only:
+        for r_seq in result_sequences:
+            if os.path.isdir(os.path.join(results_db_path, r_seq)) and r_seq != "clutter":
+                generate_results(r_seq)
 
     if os.path.exists(file_output):
         with open(file_output) as f:
