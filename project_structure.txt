@@ -1,12 +1,10 @@
-DATASETS_FOLDER=datasets
-DESCRIPTORS_FOLDER=descriptors
-RESULTS_FOLDER=results
-EVALUATION_FOLDER=evaluation
-BASETEST_EXECUTABLE=build_basetest/basetest
-APPTEST_EXECUTABLE=build_apptest/imageretrieval
-APPTEST2_EXECUTABLE=build_apptest2/imageretrieval2
-DISTTHRESH_EXECUTABLE=build_distthresh/distthresh
-FISHER_VECTOR_EXECUTABLE=build_fisher/fishervectors
+DATASETS_PATH=datasets
+DESCRIPTORS_PATH=descriptors
+RESULTS_PATH=results
+EVALUATION_PATH=evaluation
+FISHERVECTORS_EXECUTABLE=build_fisher/fishervectors
 DESCRIPTORS_EXECUTABLE=build_generate_descriptors/generate_descriptors
 KEYPOINTS_EXECUTABLE=build_generate_keypoints/generate_keypoints
+BASETEST_EXECUTABLE=build_basetest/basetest
+IMAGERETRIEVAL_EXECUTABLE=build_apptest/imageretrieval
 

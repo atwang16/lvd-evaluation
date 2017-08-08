@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	string desc_name, db_path, results = "", dictionary = "";
 	vector<string> desc_vec;
 	vl_size max_em_iterations = 100, num_clusters = 256;
-	int sample_size = 10000, first_training_sequence = 1, num_training_sequences = 0;
+	int sample_size = 10000, first_training_sequence = 1, num_training_sequences = 0, first_train_ind = 0, num_train_imgs = 0, i = 1;;
 	float *means, *covariances, *priors;
 	vector<float> means_vec, covariances_vec, priors_vec;
 
@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
 		for(auto& entry : boost::make_iterator_range(directory_iterator(db_path), {})) {
 			db_subdirs.push_back(entry.path().string()); // appends path of file to seqs vector
 		}
+		sort(db_subdirs.begin(), db_subdirs.end());
 
 		for(auto const& cat: db_subdirs) {
 			vector<string> cat_split;
@@ -96,10 +97,17 @@ int main(int argc, char *argv[]) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
 					if(is_desc(fname)) { // make sure file is a descriptor and that it is not the same file
+						if(i == first_training_sequence) {
+							first_train_ind = desc_vec.size();
+						}
 						desc_vec.push_back(fname);
+						if(i >= first_training_sequence && (i < first_training_sequence + num_training_sequences || num_training_sequences == 0)) {
+							num_train_imgs++;
+						}
 					}
 				}
 			}
+			i++;
 		}
 		sort(desc_vec.begin(), desc_vec.end());
 	}
@@ -112,23 +120,23 @@ int main(int argc, char *argv[]) {
 	}
 
 	// create a new instance of a GMM object for float data
-	vector< Mat > desc_vec_mat;
+	vector< Mat > desc_vec_mat, desc_vec_train_mat;
 	float *descs, *enc, *d_ptr;
 	vl_size num_descs = 0, dimension = 0;
 
 	// Amalgamate descriptors into one
 	cout << "Loading data...\n";
 	for(int i = 0; i < desc_vec.size(); i++) {
-		Mat m = parse_file(desc_vec[i], ',', CV_32F);
+		cout << desc_vec[i] << "\n";
+		Mat m = parse_file(desc_vec[i], ',', CV_8U);
+		cout << "Parsed matrix\n";
+		m.convertTo(m, CV_32F);
 		desc_vec_mat.push_back(m);
+		if(first_train_ind <= i && i < first_train_ind + num_train_imgs) {
+			desc_vec_train_mat.push_back(m);
+		}
 		num_descs += desc_vec_mat.back().rows;
 	}
-	if(num_training_sequences == 0) {
-		num_training_sequences = desc_vec.size();
-	}
-	vector<Mat> training_descs(desc_vec_mat.begin() + first_training_sequence - 1,
-			desc_vec_mat.begin() + first_training_sequence - 1 + num_training_sequences);
-
 
 	cout << num_descs << " descriptors loaded.\n";
 
@@ -138,8 +146,8 @@ int main(int argc, char *argv[]) {
 		descs = (float *)vl_malloc(sizeof(float) * (sample_size * dimension));
 		d_ptr = descs;
 		int descs_remaining = num_descs, to_sample = sample_size;
-		for(int i = 0; to_sample > 0 && i < training_descs.size(); i++) {
-			Mat m = training_descs[i];
+		for(int i = 0; to_sample > 0 && i < desc_vec_train_mat.size(); i++) {
+			Mat m = desc_vec_train_mat[i];
 			for(int j = 0; to_sample > 0 && j < m.rows; j++) {
 				if(prob(to_sample / descs_remaining)) {
 					memcpy(d_ptr, m.row(j).data, dimension * sizeof(float));

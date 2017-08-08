@@ -1,11 +1,9 @@
 /*
- * detectors.cpp
+ * descriptors.cpp
  *
- *  Created on: Jul 24, 2017
+ *  Created on: Aug 4, 2017
  *      Author: austin
  */
-
-//#include "descriptors.hpp"
 
 #include "detectors.hpp"
 #include "descriptors.hpp"

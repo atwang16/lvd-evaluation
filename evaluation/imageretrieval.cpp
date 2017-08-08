@@ -15,75 +15,63 @@ using namespace cv;
 using namespace std::chrono;
 using namespace boost::filesystem;
 
-bool is_desc(std::string fname);
+#define PATH_DELIMITER "/"
+#define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
+
+bool is_fv(std::string fname);
 bool is_hidden_file(std::string fname);
+bool is_first_image(std::string fname);
 string get_cat(string desc_fname);
+float cosine_similarity(Mat vec_1, Mat vec_2);
+float euclidean_norm(Mat vec_1, Mat vec_2);
 
 int main(int argc, char *argv[]) {
-	Mat query_desc, database_desc;
-	string desc_name, db_path, query_cat, results = "";
-	vector<KeyPoint> kp_vec_1, kp_vec_2;
-	float dist_ratio_thresh = 0.8f, fixed_dist_thresh = INFINITY;
-	int dist_metric, verbose_output = 0;
+	Mat query_fv;
+	string desc_name, fv_database_path, query_cat, results = "";
+	int verbose_output = 0, exclude_first_image = 0;
 
-	if(argc < 8) {
-		cout << "Usage ./imageretrieval parameters_file desc_name dist_threshold dist_metric query_descs desc_database verbose_output [results_file]\n";
+	if(argc < 6) {
+		cout << "Usage ./imageretrieval2 desc_name query_fisher fisher_database verbose_output exclude_first_image [results_file]\n";
 		return -1;
 	}
 
-	// Load parameters for base test
-	std::ifstream params(argv[1]);
-	string line, var, value;
-	std::vector<std::string> line_split;
-
-	while(getline(params, line)) {
-		boost::split(line_split, line, boost::is_any_of("="));
-		var = line_split[0];
-		value = line_split.back();
-		if(var == "DIST_RATIO_THRESH") {
-			dist_ratio_thresh = stof(value);
-		}
-	}
-
 	// Parse remaining arguments
-	desc_name = argv[2];
-	if(strcmp(argv[3], "inf") != 0) {
-		fixed_dist_thresh = atof(argv[3]);
-	}
-	dist_metric = get_dist_metric(argv[4]);
+	desc_name = argv[1];
 
-	string query_path = argv[5];
-	query_desc = parse_file(query_path, ',', CV_8U);
+	string query_path = argv[2];
+	query_fv = parse_file(query_path, ',', CV_32F);
 	query_cat = get_cat(query_path);
 	vector<string> query_path_split;
-	boost::split(query_path_split, query_path, boost::is_any_of("/"));
+	boost::split(query_path_split, query_path, BOOST_PATH_DELIMITER);
 	string query_name = query_path_split.back();
 
 	// Extract all descriptors from database
-	vector<string> desc_vec;
-	db_path = argv[6];
+	vector<string> fv_database;
+	fv_database_path = argv[3];
 
-	verbose_output = atoi(argv[7]);
+	verbose_output = atoi(argv[4]);
+	exclude_first_image = atoi(argv[5]);
 
-	if(argc >= 9) {
-		results = argv[8];
+	if(argc >= 7) {
+		results = argv[6];
 	}
 
-	if(is_directory(db_path)) {
+	if(is_directory(fv_database_path)) {
 		vector<string> db_subdirs;
 
 		// iterate through sequence folders of directory
-		for(auto& entry : boost::make_iterator_range(directory_iterator(db_path), {})) {
+		for(auto& entry : boost::make_iterator_range(directory_iterator(fv_database_path), {})) {
 			db_subdirs.push_back(entry.path().string()); // appends path of file to seqs vector
 		}
+		sort(db_subdirs.begin(), db_subdirs.end());
 
 		for(auto const& cat: db_subdirs) {
-			vector<string> cat_split;
 			if(is_directory(cat)) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
-					if(is_desc(fname) && query_path != fname) { // make sure file is a descriptor and that it is not the same file
-						desc_vec.push_back(fname);
+					// make sure file is a descriptor and that it is not the same file, and exclude first image if requested
+					if(is_fv(fname) && query_path != fname && !(exclude_first_image && is_first_image(fname))) {
+						fv_database.push_back(fname);
 					}
 				}
 			}
@@ -91,33 +79,22 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Calculate number of correspondences for each database image
-	vector<int> num_corr;
-	int nc = 0;
-	vector< vector<DMatch> > nn_matches;
-	Ptr< BFMatcher > matcher = BFMatcher::create(dist_metric);
+	vector<float> distances;
 
-	for(int i = 0; i < desc_vec.size(); i++) {
-		Mat database_desc = parse_file(desc_vec[i], ',', CV_8U);
-		matcher->knnMatch(query_desc, database_desc, nn_matches, 2);
+	for(int i = 0; i < fv_database.size(); i++) {
+		Mat db_fv = parse_file(fv_database[i], ',', CV_32F);
 
-		nc = 0;
-		for(int i = 0; i < nn_matches.size(); i++) {
-			if(nn_matches[i][0].distance < fixed_dist_thresh && nn_matches[i][0].distance < dist_ratio_thresh * nn_matches[i][1].distance) {
-				nc++;
-			}
-		}
-		num_corr.push_back(nc);
-		vector< vector<DMatch> >().swap(nn_matches);
+		distances.push_back(cosine_similarity(query_fv, db_fv)); // use cosine similarity to calculate distances between fisher vectors
 	}
 
 	// Find permutation of number of correspondences
 	vector<int> ind;
-	for(int i = 0; i < desc_vec.size(); i++) {
+	for(int i = 0; i < fv_database.size(); i++) {
 		ind.push_back(i);
 	}
 	sort(ind.begin(), ind.end(),
-			[&](const int& i, const int& j) {
-        		return (num_corr[i] > num_corr[j]);
+			[&](const float& i, const float& j) {
+        		return (distances[i] > distances[j]);
     		}
 	);
 
@@ -125,7 +102,7 @@ int main(int argc, char *argv[]) {
 	vector<int> rank;
 	rank.push_back(1); // initial value
 	for(int ord = 2; ord <= ind.size(); ord++) {
-		if(num_corr[ind[ord - 1]] == num_corr[ind[ord - 2]]) { // if equal number of matches is found
+		if(distances[ind[ord - 1]] == distances[ind[ord - 2]]) { // if equal number of matches is found
 			rank.push_back(rank[rank.size() - 1]);
 		}
 		else {
@@ -139,7 +116,7 @@ int main(int argc, char *argv[]) {
 	bool is_first_img_rel = false;
 	for(int ord = 1; ord <= ind.size(); ord++) {
 		int i = ind[ord - 1];
-		if(query_cat == get_cat(desc_vec[i])) {
+		if(query_cat == get_cat(fv_database[i])) {
 			num_rel_imgs++;
 			ave_precision += (float)num_rel_imgs / rank[ord - 1];
 			if(ord == 1) {
@@ -160,8 +137,8 @@ int main(int argc, char *argv[]) {
 			for(int ord = 1; ord <= ind.size(); ord++) {
 				int i = ind[ord - 1];
 				cout << setw(5) << right << rank[ord - 1] << " ";
-				cout << setw(5) << right << num_corr[i] << " ";
-				cout << desc_vec[i] << "\n";
+				cout << setw(5) << right << distances[i] << " ";
+				cout << fv_database[i] << "\n";
 			}
 		}
 		else { // print bare-minimum statistics; easier for Python interface code to read
@@ -183,10 +160,16 @@ bool is_hidden_file(string fname) {
     return(fname[0] == '.');
 }
 
-bool is_desc(string fname) {
+bool is_fv(string fname) {
 	vector<string> fname_split;
 	boost::split(fname_split, fname, boost::is_any_of("_,."));
-	return(fname_split[fname_split.size() - 2] == "ds");
+	return(fname_split[fname_split.size() - 2] == "fv");
+}
+
+bool is_first_image(std::string fname) {
+	vector<string> fname_split;
+	boost::split(fname_split, fname, boost::is_any_of("_,."));
+	return(fname_split[fname_split.size() - 3] == "001");
 }
 
 string get_cat(string fname) {
@@ -194,4 +177,12 @@ string get_cat(string fname) {
 	boost::split(fname_split, fname, boost::is_any_of("_,."));
 	int i = fname_split.size() - 5;
 	return(fname_split[i] + "_" + fname_split[i + 1]);
+}
+
+float euclidean_norm(Mat vec_1, Mat vec_2) {
+	return norm(vec_1, vec_2, NORM_L2);
+}
+
+float cosine_similarity(Mat vec_1, Mat vec_2) {
+     return vec_1.dot(vec_2) / (norm(vec_1) * norm(vec_2));
 }

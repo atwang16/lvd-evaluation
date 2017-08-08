@@ -19,63 +19,50 @@ Mat parse_file(string fname, char delimiter, int type) {
 		type = CV_32F;
 	}
 
-	if(type == CV_32F) {
-		vector< vector<float> > all_data;
+	vector< vector<Data> > all_data;
 
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<float> values;
-				stringstream str_stream(current_line);
-				string single_value;
+	// read each line
+	while(getline(inputfile, current_line)) {
+		if(current_line != "") {
+			vector<Data> values;
+			stringstream str_stream(current_line);
+			string single_value;
 
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atof(single_value.c_str()));
+			// Read each value with delimiter
+			while(getline(str_stream,single_value, delimiter)) {
+				if(single_value != "") {
+					Data d;
+					if(type == CV_32F) {
+						d.f = stof(single_value);
 					}
+					else {
+						d.u = stoi(single_value);
+					}
+					values.push_back(d);
 				}
-				all_data.push_back(values);
 			}
+			all_data.push_back(values);
 		}
+	}
+	cout << "Read lines\n";
 
+	if(all_data.size()) {
 		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_32F);
+		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), type);
 		for(int row = 0; row < vect.rows; row++) {
 		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<float>(row, col) = all_data[row][col];
+			   if(type == CV_32F) {
+				   vect.at<float>(row, col) = all_data[row][col].f;
+			   }
+			   else {
+				   vect.at<uint8_t>(row, col) = all_data[row][col].u;
+			   }
 		   }
 		}
 		return vect;
 	}
-	else { // CV_8U
-		vector< vector<uint8_t> > all_data;
-
-		// read each line
-		while(getline(inputfile, current_line)) {
-			if(current_line != "") {
-				vector<uint8_t> values;
-				stringstream str_stream(current_line);
-				string single_value;
-
-				// Read each value with delimiter
-				while(getline(str_stream,single_value, delimiter)) {
-					if(single_value != "") {
-						values.push_back(atoi(single_value.c_str()));
-					}
-				}
-				all_data.push_back(values);
-			}
-		}
-
-		// Place data in OpenCV matrix
-		Mat vect = Mat::zeros((int)all_data.size(), (int)all_data[0].size(), CV_8U);
-		for(int row = 0; row < vect.rows; row++) {
-		   for(int col = 0; col < vect.cols; col++) {
-			  vect.at<uint8_t>(row, col) = all_data[row][col];
-		   }
-		}
-		return vect;
+	else {
+		return cv::Mat();
 	}
 }
 

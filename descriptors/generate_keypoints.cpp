@@ -37,13 +37,13 @@ bool is_image(string fname);
 
 int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, output_directory, database_name;
-	bool single_image;
+	bool single_image, overwrite = false;
 	Detector d;
 	map<string, Detector> detmap = {DETECTOR_MAP};
 
-	if(argc < 5) {
-		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
-		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination" << "\n";
+	if(argc < 6) {
+		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination overwrite_flag" << "\n";
+		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination overwrite_flag" << "\n";
 		return 1;
 	}
 
@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
 	parameter_file = argv[2];
 	image_directory = argv[3];
 	output_directory = argv[4];
+	overwrite = stoi(argv[5]);
 
 	// get all the sequences
 	vector<string> images;
@@ -133,42 +134,47 @@ int main(int argc, char *argv[]) {
 					+ img_name + "_kp.csv";
 		}
 
-		// Compute keypoints
-		KeyPointCollection kp_col;
-		detect(d, parameter_file, img_mat, kp_col, kp_time);
+		if(overwrite || !exists(kp_path)) {
+			// Compute keypoints
+			KeyPointCollection kp_col;
+			detect(d, parameter_file, img_mat, kp_col, kp_time);
 
-		// Open the keypoint file for saving
-		std::ofstream f_key;
-		f_key.open(kp_path);
-		for(int i = 0; i < kp_col.keypoints.size(); i++) {
-			f_key << kp_col.keypoints[i].pt.x     << ",";
-			f_key << kp_col.keypoints[i].pt.y     << ",";
-			f_key << kp_col.keypoints[i].size     << ",";
-			f_key << kp_col.keypoints[i].angle    << ",";
-			f_key << kp_col.keypoints[i].response << ",";
-			f_key << kp_col.keypoints[i].octave   << ",";
-			if(kp_col.affine.size() > 0) {
-				f_key << kp_col.affine[i].at<float>(0,0) << ",";
-				f_key << kp_col.affine[i].at<float>(0,1) << ",";
-				f_key << kp_col.affine[i].at<float>(0,2) << ",";
-				f_key << kp_col.affine[i].at<float>(1,0) << ",";
-				f_key << kp_col.affine[i].at<float>(1,1) << ",";
-				f_key << kp_col.affine[i].at<float>(1,2) << "\n";
+			// Open the keypoint file for saving
+			std::ofstream f_key;
+			f_key.open(kp_path);
+			for(int i = 0; i < kp_col.keypoints.size(); i++) {
+				f_key << kp_col.keypoints[i].pt.x     << ",";
+				f_key << kp_col.keypoints[i].pt.y     << ",";
+				f_key << kp_col.keypoints[i].size     << ",";
+				f_key << kp_col.keypoints[i].angle    << ",";
+				f_key << kp_col.keypoints[i].response << ",";
+				f_key << kp_col.keypoints[i].octave   << ",";
+				if(kp_col.affine.size() > 0) {
+					f_key << kp_col.affine[i].at<float>(0,0) << ",";
+					f_key << kp_col.affine[i].at<float>(0,1) << ",";
+					f_key << kp_col.affine[i].at<float>(0,2) << ",";
+					f_key << kp_col.affine[i].at<float>(1,0) << ",";
+					f_key << kp_col.affine[i].at<float>(1,1) << ",";
+					f_key << kp_col.affine[i].at<float>(1,2) << "\n";
+				}
+				else {
+					f_key << 1 << ",";
+					f_key << 0 << ",";
+					f_key << 0 << ",";
+					f_key << 0 << ",";
+					f_key << 1 << ",";
+					f_key << 0 << "\n";
+				}
 			}
-			else {
-				f_key << 1 << ",";
-				f_key << 0 << ",";
-				f_key << 0 << ",";
-				f_key << 0 << ",";
-				f_key << 1 << ",";
-				f_key << 0 << "\n";
-			}
+			f_key.close();
+			cout << "Keypoints stored at " << kp_path << "\n\n";
+
+			num_images++;
+			num_keypoints += kp_col.keypoints.size();
 		}
-		f_key.close();
-		cout << "Keypoints stored at " << kp_path << "\n\n";
-
-		num_images++;
-		num_keypoints += kp_col.keypoints.size();
+		else {
+			cout << "Keypoint already exists at " << kp_path << "\n" << "\n";
+		}
 	}
 
 	std::ofstream file;

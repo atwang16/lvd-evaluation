@@ -16,6 +16,12 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
+union Data
+{
+    float f;
+    std::uint8_t u;
+};
+
 cv::Mat parse_file(std::string fname, char delimiter, int type);
 
 int get_dist_metric(std::string metric);

@@ -3,25 +3,27 @@ import sys
 import os.path
 import os
 
+MIN_NUM_ARGS = 2
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+PROJECT_TREE = os.path.join(ROOT_PATH, "project_structure.txt")
 datasets_folder = None
 img_extensions = [".jpg", ".png", ".ppm", ".pgm"]
 preprocessing = True 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < MIN_NUM_ARGS:
         print("Usage: python imageretrieval.py database")
         sys.exit(1)
 
-    with open(os.path.join(ROOT_PATH, "project_structure.txt")) as f:
+    with open(PROJECT_TREE) as f:
         line = f.readline()
         while line != "":
             line_split = line.split("=")
             var = line_split[0]
             dir = line_split[-1]
-            if(dir[-1] == "\n"):
+            if dir[-1] == "\n":
                 dir = dir[:-1]
-            if var == "DATASETS_FOLDER":
+            if var == "DATASETS_PATH":
                 datasets_folder = os.path.join(ROOT_PATH, dir)
             line = f.readline()
 
