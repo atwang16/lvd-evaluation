@@ -1,6 +1,15 @@
 # lvd-evaluation
 Source code, evaluation framework, and datasets for "A Comparative Study of Local Visual Descriptors," researched at ESIEE during the summer of 2017.
 
+## Requirements
+
+All code for this project was written in Python and C++. The following are required in order to be able to run the code:
+* Python 3.x
+* C++11 or later
+* OpenCV 3.x
+* VlFeat
+* C++ BOOST libraries
+
 ## Directory Structure and Naming Conventions
 - datasets - directory containing all image datasets used in tests (not included in repository)
 - descriptors - source code and parameter files for local visual descriptors

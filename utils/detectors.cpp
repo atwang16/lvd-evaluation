@@ -2,7 +2,10 @@
  * detectors.cpp
  *
  *  Created on: Jul 24, 2017
- *      Author: austin
+ *      Author: Austin Wang
+ *      Project: A Comparative Study of Local Visual Descriptors
+ *
+ *  Contains implementations of functions to generate keypoints from images.
  */
 
 #include "detectors.hpp"

@@ -113,9 +113,7 @@ int main(int argc, char *argv[]) {
 		keypoint_paths.push_back(keypoint_directory);
 	}
 	else {
-		cout << "Error: invalid input for image directory.\n";
-		cout << "Usage ./generate_descriptors descriptor path_to_parameter_file image_dataset_root_folder keypoint_dataset_root_folder path_to_destination" << "\n";
-		cout << "      ./generate_descriptors descriptor path_to_parameter_file path_to_image path_to_keypoint path_to_destination" << "\n";
+		cout << "Error: invalid input; must be an image or image directory.\n";
 
 		return 1;
 	}
@@ -186,12 +184,13 @@ int main(int argc, char *argv[]) {
 				kp.angle = kp_mat_unproc.at<float>(i, 3);
 				kp.response = kp_mat_unproc.at<float>(i, 4);
 				kp.octave = kp_mat_unproc.at<float>(i, 5);
-				aff.at<float>(0, 0) = kp_mat_unproc.at<float>(i, 6);
-				aff.at<float>(0, 1) = kp_mat_unproc.at<float>(i, 7);
-				aff.at<float>(0, 2) = kp_mat_unproc.at<float>(i, 8);
-				aff.at<float>(1, 0) = kp_mat_unproc.at<float>(i, 9);
-				aff.at<float>(1, 1) = kp_mat_unproc.at<float>(i, 10);
-				aff.at<float>(1, 2) = kp_mat_unproc.at<float>(i, 11);
+				kp.class_id = kp_mat_unproc.at<float>(i, 6);
+				aff.at<float>(0, 0) = kp_mat_unproc.at<float>(i, 7);
+				aff.at<float>(0, 1) = kp_mat_unproc.at<float>(i, 8);
+				aff.at<float>(0, 2) = kp_mat_unproc.at<float>(i, 9);
+				aff.at<float>(1, 0) = kp_mat_unproc.at<float>(i, 10);
+				aff.at<float>(1, 1) = kp_mat_unproc.at<float>(i, 11);
+				aff.at<float>(1, 2) = kp_mat_unproc.at<float>(i, 12);
 				keypoints.push_back(kp);
 				affine.push_back(aff);
 			}

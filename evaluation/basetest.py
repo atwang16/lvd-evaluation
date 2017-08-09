@@ -6,7 +6,7 @@ import os
 MIN_NUM_ARGS = 3
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
 PROJECT_TREE = os.path.join(ROOT_PATH, "project_structure.txt")
-directories = {"results_path": None, "datasets_path": None, "basetest_executable": None}
+directories = {"results_path": None, "datasets_path": None, "descriptors_path": None, "basetest_executable": None}
 flags = {"-results": False}
 results_ds_path = None
 results_kp_path = None
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     desc_full_name = sys.argv[1]
     database = sys.argv[2]
 
-    if desc_full_name.find("_"):
+    if desc_full_name.count("_") > 0:
         det_desc_split = desc_full_name.split("_")
         detector = det_desc_split[0]
         descriptor = det_desc_split[1]
@@ -111,10 +111,12 @@ if __name__ == "__main__":
                 flags[f] = True
         arg_index += 1
 
+    directories["datasets_path"] = os.path.join(directories["datasets_path"], database)
     results_ds_path = os.path.join(directories["results_path"], desc_full_name, database)
     results_kp_path = os.path.join(directories["results_path"], detector, database)
+    descriptors_parameter_file = os.path.join(directories["descriptors_path"], descriptor + "_parameters.txt")
 
-    with open(descriptor_parameters_path) as f:
+    with open(descriptors_parameter_file) as f:
         line = f.readline()
         while line != "":
             line_split = line.split("=")

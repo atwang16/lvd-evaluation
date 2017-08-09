@@ -22,6 +22,7 @@
 #include <boost/assign/list_of.hpp>
 #include <chrono>
 #include <algorithm>
+#include <cmath>
 
 using namespace boost::filesystem;
 using namespace std::chrono;
@@ -149,6 +150,7 @@ int main(int argc, char *argv[]) {
 				f_key << kp_col.keypoints[i].angle    << ",";
 				f_key << kp_col.keypoints[i].response << ",";
 				f_key << kp_col.keypoints[i].octave   << ",";
+				f_key << kp_col.keypoints[i].class_id << ",";
 				if(kp_col.affine.size() > 0) {
 					f_key << kp_col.affine[i].at<float>(0,0) << ",";
 					f_key << kp_col.affine[i].at<float>(0,1) << ",";
@@ -158,11 +160,11 @@ int main(int argc, char *argv[]) {
 					f_key << kp_col.affine[i].at<float>(1,2) << "\n";
 				}
 				else {
-					f_key << 1 << ",";
+					f_key << kp_col.keypoints[i].size * cos(kp_col.keypoints[i].angle) << ",";
+					f_key << kp_col.keypoints[i].size * -sin(kp_col.keypoints[i].angle) << ",";
 					f_key << 0 << ",";
-					f_key << 0 << ",";
-					f_key << 0 << ",";
-					f_key << 1 << ",";
+					f_key << kp_col.keypoints[i].size * sin(kp_col.keypoints[i].angle) << ",";
+					f_key << kp_col.keypoints[i].size * cos(kp_col.keypoints[i].angle) << ",";
 					f_key << 0 << "\n";
 				}
 			}

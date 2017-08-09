@@ -44,7 +44,6 @@ Mat parse_file(string fname, char delimiter, int type) {
 			all_data.push_back(values);
 		}
 	}
-	cout << "Read lines\n";
 
 	if(all_data.size()) {
 		// Place data in OpenCV matrix

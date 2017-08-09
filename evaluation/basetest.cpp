@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 
 	if(argc < 11) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc2 keypoint2 homography dist_metric [-s stat_results] [-d draw_results]\n";
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric [-s stat_results] [-d draw_results]\n";
 		return 1;
 	}
 
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 	img_1_seq = img_1_path_split[img_1_path_split.size()-2].substr(0, 7);
 	img_1_num = img_1_path_split[img_1_path_split.size()-2].substr(8, 3);
 	img_1_name = img_1_path_split[img_1_path_split.size()-2].substr(0, 11);
-	desc_1 = parse_file(argv[4], ',', CV_8U);
+	desc_1 = parse_file(argv[4], ',', CV_32F);
 	kp_mat_1 = parse_file(argv[5], ',', CV_32F);
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp_1 = KeyPoint();
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 	img_2_seq = img_2_path_split[img_2_path_split.size()-2].substr(0, 7);
 	img_2_num = img_2_path_split[img_2_path_split.size()-2].substr(8, 3);
 	img_2_name = img_2_path_split[img_2_path_split.size()-2].substr(0, 11);
-	desc_2 = parse_file(argv[7], ',', CV_8U);
+	desc_2 = parse_file(argv[7], ',', CV_32F);
 	kp_mat_2 = parse_file(argv[8], ',', CV_32F);
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp_2 = KeyPoint();
@@ -122,8 +122,6 @@ int main(int argc, char *argv[]) {
 	Ptr< BFMatcher > matcher = BFMatcher::create(get_dist_metric(dist_metric)); // no cross check
 	vector< vector<DMatch> > nn_matches;
 	matcher->knnMatch(desc_1, desc_2, nn_matches, 2);
-	high_resolution_clock::time_point end = high_resolution_clock::now();
-	long match_time = duration_cast<milliseconds>(end - start).count();
 
 	// Use the distance ratio to determine whether it is a "good" match
 	vector<DMatch> good_matches;
@@ -132,6 +130,8 @@ int main(int argc, char *argv[]) {
 			good_matches.push_back(nn_matches[i][0]);
 		}
 	}
+	high_resolution_clock::time_point end = high_resolution_clock::now();
+	long match_time = duration_cast<milliseconds>(end - start).count();
 
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;

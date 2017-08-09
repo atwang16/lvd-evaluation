@@ -2,7 +2,6 @@ import subprocess
 import sys
 import os.path
 import os
-from random import sample
 
 MIN_NUM_ARGS = 3
 ROOT_PATH = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
@@ -14,7 +13,6 @@ PARAMETERS_FILE = os.path.join(os.getcwd(), "parameters.txt")
 FISHER_PARAMETERS_FILE = os.path.join(os.getcwd(), "fisher_parameters.txt")
 IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
 
-subset_seq_size = 0
 query_sample_size = 5
 mean_ave_prec = 0.0
 success_rate = 0.0
@@ -64,10 +62,8 @@ def generate_results(sequence):
         print("Error: no fisher vectors found.")
         return
 
-    if query_sample_size == 1:
-        query_fisher_vectors = [fisher_vectors[0]]
-    elif query_sample_size < len(fisher_vectors):
-        query_fisher_vectors = sample(fisher_vectors, query_sample_size)
+    if query_sample_size < len(fisher_vectors):
+        query_fisher_vectors = fisher_vectors[0:query_sample_size]
     else:
         query_fisher_vectors = fisher_vectors
 
@@ -124,15 +120,14 @@ if __name__ == "__main__":
         line = f.readline()
         while line != "":
             line_split = line.split("=")
-            var = line_split[0]
-            value = line_split[-1]
-            if value[-1] == "\n":
-                value = value[:-1]
+            if len(line_split) >= 2:
+                var = line_split[0]
+                value = line_split[1]
+                if value[-1] == "\n":
+                    value = value[:-1]
 
-            if var == "SEQUENCE_SIZE":
-                subset_seq_size = int(value)
-            elif var == "QUERY_SAMPLE_SIZE":
-                query_sample_size = int(value)
+                if var == "QUERY_SAMPLE_SIZE":
+                    query_sample_size = int(value)
             line = f.readline()
 
     if flags["-generate_fishervectors"]:

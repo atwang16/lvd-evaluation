@@ -20,7 +20,7 @@ using namespace boost::filesystem;
 
 bool is_fv(std::string fname);
 bool is_hidden_file(std::string fname);
-bool is_first_image(std::string fname);
+bool among_first_n_images(std::string fname, int n);
 string get_cat(string desc_fname);
 float cosine_similarity(Mat vec_1, Mat vec_2);
 float euclidean_norm(Mat vec_1, Mat vec_2);
@@ -28,10 +28,10 @@ float euclidean_norm(Mat vec_1, Mat vec_2);
 int main(int argc, char *argv[]) {
 	Mat query_fv;
 	string desc_name, fv_database_path, query_cat, results = "";
-	int verbose_output = 0, exclude_first_image = 0;
+	int num_query_images = 1;
 
-	if(argc < 6) {
-		cout << "Usage ./imageretrieval2 desc_name query_fisher fisher_database verbose_output exclude_first_image [results_file]\n";
+	if(argc < 5) {
+		cout << "Usage ./imageretrieval2 desc_name query_fisher fisher_database num_query_images [results_file]\n";
 		return -1;
 	}
 
@@ -49,11 +49,10 @@ int main(int argc, char *argv[]) {
 	vector<string> fv_database;
 	fv_database_path = argv[3];
 
-	verbose_output = atoi(argv[4]);
-	exclude_first_image = atoi(argv[5]);
+	num_query_images = atoi(argv[4]);
 
-	if(argc >= 7) {
-		results = argv[6];
+	if(argc >= 6) {
+		results = argv[5];
 	}
 
 	if(is_directory(fv_database_path)) {
@@ -70,7 +69,7 @@ int main(int argc, char *argv[]) {
 				for(auto& entry : boost::make_iterator_range(directory_iterator(cat), {})) {
 					string fname = entry.path().string();
 					// make sure file is a descriptor and that it is not the same file, and exclude first image if requested
-					if(is_fv(fname) && query_path != fname && !(exclude_first_image && is_first_image(fname))) {
+					if(is_fv(fname) && query_path != fname && !(among_first_n_images(fname, num_query_images))) {
 						fv_database.push_back(fname);
 					}
 				}
@@ -128,21 +127,16 @@ int main(int argc, char *argv[]) {
 
 	// Export metrics
 	if(results == "") {
-		if(verbose_output) {
-			cout << desc_name << " descriptor results:\n";
-			cout << "-----------------------"                                  << "\n";
-			cout << "Average precision: " << ave_precision                     << "\n";
-			cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
-			cout                                                               << "\n";
-			for(int ord = 1; ord <= ind.size(); ord++) {
-				int i = ind[ord - 1];
-				cout << setw(5) << right << rank[ord - 1] << " ";
-				cout << setw(5) << right << distances[i] << " ";
-				cout << fv_database[i] << "\n";
-			}
-		}
-		else { // print bare-minimum statistics; easier for Python interface code to read
-			cout << ave_precision << " " << (is_first_img_rel ? 1 : 0);
+		cout << desc_name << " descriptor results:\n";
+		cout << "-----------------------"                                  << "\n";
+		cout << "Average precision: " << ave_precision                     << "\n";
+		cout << "Success:           " << (is_first_img_rel ? "yes" : "no") << "\n";
+		cout                                                               << "\n";
+		for(int ord = 1; ord <= ind.size(); ord++) {
+			int i = ind[ord - 1];
+			cout << setw(5) << right << rank[ord - 1] << " ";
+			cout << setw(5) << right << distances[i] << " ";
+			cout << fv_database[i] << "\n";
 		}
 	}
 	else {
@@ -166,10 +160,10 @@ bool is_fv(string fname) {
 	return(fname_split[fname_split.size() - 2] == "fv");
 }
 
-bool is_first_image(std::string fname) {
+bool among_first_n_images(std::string fname, int n) {
 	vector<string> fname_split;
 	boost::split(fname_split, fname, boost::is_any_of("_,."));
-	return(fname_split[fname_split.size() - 3] == "001");
+	return(stoi(fname_split[fname_split.size() - 3]) <= n);
 }
 
 string get_cat(string fname) {

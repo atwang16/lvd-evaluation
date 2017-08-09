@@ -1,6 +1,4 @@
-import subprocess
 import sys
-import os.path
 import os
 
 MIN_NUM_ARGS = 2
@@ -12,7 +10,7 @@ preprocessing = True
 
 if __name__ == "__main__":
     if len(sys.argv) < MIN_NUM_ARGS:
-        print("Usage: python imageretrieval.py database")
+        print("Usage: python3 format_database.py database")
         sys.exit(1)
 
     with open(PROJECT_TREE) as f:
@@ -51,7 +49,7 @@ if __name__ == "__main__":
         sdir = subdirs[len(subdirs)-1-i]
         if os.path.isdir(os.path.join(db_path, sdir)):
             if preprocessing:
-                sdir_rename = db_name[0:3] + "_" + "{0:03d}".format(int(sdir[4:])+1) # preprocessing step, if necessary; modify this line
+                sdir_rename = sdir[8:] # preprocessing step, if necessary; modify this line
                 os.rename(os.path.join(db_path, sdir), os.path.join(db_path, sdir_rename))
                 sdir = sdir_rename
 
@@ -69,7 +67,7 @@ if __name__ == "__main__":
                 img_ext = os.path.splitext(img_path)[1]
                 if img_ext in img_extensions:
                     if preprocessing:
-                        img_rename = db_name[0:3] + "_" + "{0:03d}".format(int(img[4:7])+1) + "_" + "{0:03d}".format(int(img[8:11])+1) + img[11:]  # preprocessing step, if necessary; modify this line
+                        img_rename = img[8:]  # preprocessing step, if necessary; modify this line
                         os.rename(os.path.join(db_path, sdir, img), os.path.join(db_path, sdir, img_rename))
                         img = img_rename
 

@@ -12,7 +12,7 @@ desc_name = None
 
 def generate_keypoints(det, db):
     global descriptors_parameter_file, directories, flags
-    args = [directories["keypoint_executable"], det, descriptors_parameter_file, directories["image_db_path"], directories["results_path"], flags["-overwrite"]]
+    args = [directories["keypoints_executable"], det, descriptors_parameter_file, directories["datasets_path"], directories["results_path"], flags["-overwrite"]]
     print(det + ": " + "Extracting keypoints from " + db)
     print("***")
     subprocess.run(args)
@@ -22,7 +22,7 @@ def generate_keypoints(det, db):
 
 if __name__ == "__main__":
     if len(sys.argv) < MIN_NUM_ARGS:
-        print("Usage: python3 build_keypoints.py detector database_name [descriptor_name] [-overwrite]")
+        print("Usage: python3 generate_keypoints.py detector database_name [descriptor_name] [-overwrite]")
         sys.exit(1)
 
     detector = sys.argv[1]
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     if descriptors_parameter_file != "null":
         descriptors_parameter_file = os.path.join(directories["descriptors_path"], desc_name + "_parameters.txt")
-    directories["results_path"] = os.path.join(directories["results_path"], detector)
+    directories["results_path"] = os.path.join(directories["results_path"], detector if descriptors_parameter_file == "null" else desc_name)
     directories["datasets_path"] = os.path.join(directories["datasets_path"], database)
 
     generate_keypoints(detector, database)

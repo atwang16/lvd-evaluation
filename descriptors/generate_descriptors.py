@@ -28,7 +28,7 @@ def generate_descriptors(desc, img_db, det_db):
 
 if __name__ == "__main__":
     if len(sys.argv) < MIN_NUM_ARGS:
-        print("Usage: python3 build_descriptors.py detector_name desc_name database_name [-overwrite]")
+        print("Usage: python3 generate_descriptors.py detector_name desc_name database_name [-overwrite]")
         sys.exit(1)
 
     detector = sys.argv[1]
