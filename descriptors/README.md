@@ -9,10 +9,10 @@ If the file is moved relative to the project root folder, where project_structur
 
 Usage: `python3 generate_keypoints.py detector database_name [descriptor_name] [-overwrite]`
 
-| detector | the name of the keypoint detector which will be used to generate keypoints |
-| database_name | the name of the image database to which the detector will be applied |
-| descriptor_name | the name of the descriptor for which keypoints will be generated |
-| -overwrite | a flag which controls whether previously existing keypoint files are overwritten or not |
+| `detector` | the name of the keypoint detector which will be used to generate keypoints |
+| `database_name` | the name of the image database to which the detector will be applied |
+| `descriptor_name` | the name of the descriptor for which keypoints will be generated |
+| `-overwrite` | a flag which controls whether previously existing keypoint files are overwritten or not |
 
 Currently, the following detectors are supported:
 * Difference of Gaussians (dog)
