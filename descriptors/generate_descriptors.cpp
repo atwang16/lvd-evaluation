@@ -25,7 +25,7 @@ using namespace cv;
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
 
-void compute(Descriptor d, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, vector<Mat>& affine, cv::Mat& descriptors, double& desc_time);
+void compute(Descriptor d, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, double& desc_time);
 bool is_image(path fname);
 bool is_keypoint_file(path file_path);
 
@@ -175,6 +175,7 @@ int main(int argc, char *argv[]) {
 //				cout << "\n";
 //			}
 
+			KeyPointCollection kp_col;
 			for(int i = 0; i < kp_mat_unproc.rows; i++) {
 				cv::KeyPoint kp = cv::KeyPoint();
 				cv::Mat aff = cv::Mat::zeros(2, 3, CV_32F);
@@ -194,10 +195,12 @@ int main(int argc, char *argv[]) {
 				keypoints.push_back(kp);
 				affine.push_back(aff);
 			}
+			kp_col.keypoints = keypoints;
+			kp_col.affine = affine;
 
 			// Compute descriptors
 			cv::Mat descriptors;
-			compute(d, parameter_file, img_mat, keypoints, affine, descriptors, desc_time);
+			compute(d, parameter_file, img_mat, kp_col, descriptors, desc_time);
 
 			// Open the descriptor file for saving
 			std::ofstream f_desc;
@@ -224,13 +227,13 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void compute(Descriptor d, string parameter_file, cv::Mat image, vector<KeyPoint>& keypoints, vector<Mat>& affine, cv::Mat& descriptors, double& desc_time) {
+void compute(Descriptor d, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, double& desc_time) {
 	// Compute descriptors
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	(*d)(image, keypoints, affine, descriptors, parameter_file);
+	(*d)(image, kp_col.keypoints, kp_col.affine, descriptors, parameter_file);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
-	int num_keypoints = keypoints.size();
+	int num_keypoints = kp_col.keypoints.size();
 	desc_time += (double)duration_cast<microseconds>(desc_done - start).count() / num_keypoints;
 }
 

@@ -10,14 +10,10 @@
 using namespace std;
 using namespace cv;
 
-Mat parse_file(string fname, char delimiter, int type) {
+Mat parse_file(string fname, char delimiter) {
 	ifstream inputfile(fname);
 	string current_line;
-
-	if(type != CV_8U && type != CV_32F) {
-		cout << "Error: only CV_8U or CV_32F accepted as arguments to type. Default CV_32F assumed.\n";
-		type = CV_32F;
-	}
+	int type = CV_8U;
 
 	vector< vector<Data> > all_data;
 
@@ -32,7 +28,8 @@ Mat parse_file(string fname, char delimiter, int type) {
 			while(getline(str_stream,single_value, delimiter)) {
 				if(single_value != "") {
 					Data d;
-					if(type == CV_32F) {
+					if(single_value.find(".") != string::npos || type == CV_32F) {
+						type = CV_32F;
 						d.f = stof(single_value);
 					}
 					else {

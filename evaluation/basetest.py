@@ -12,11 +12,12 @@ results_ds_path = None
 results_kp_path = None
 descriptor_parameters_path = None
 file_output = None
-PARAMETERS_FILE_PATH = os.path.join(os.getcwd(), "parameters.txt")
+PARAMETERS_FILE_PATH = os.path.join(os.getcwd(), "basetest_parameters.txt")
 IMG_EXTENSIONS = [".jpg", ".png", ".ppm", ".pgm"]
 distance = "L2"
 DESCRIPTOR_SUFFIX = "ds.csv"
 KEYPOINT_SUFFIX = "kp.csv"
+CORRESPONDENCES_SUFFIX = "co.csv"
 MATCH_RATIO = 0
 MATCHING_SCORE = 1
 PRECISION = 2
@@ -44,11 +45,11 @@ def generate_results(desc, sequence):
             images.append(file)
     sorted(images)
 
-    img1_path = os.path.join(image_seq_path, images[0])
-    img1_base_name, _ = os.path.splitext(images[0])
+    img_1_path = os.path.join(image_seq_path, images[0])
+    img_1_base_name, _ = os.path.splitext(images[0])
     img_seq = images[0].split("_")[0] + "_" + images[0].split("_")[1]
-    desc1_path = os.path.join(ds_seq_path, img1_base_name + "_" + DESCRIPTOR_SUFFIX)
-    kp1_path = os.path.join(kp_seq_path, img1_base_name + "_" + KEYPOINT_SUFFIX)
+    desc_1_path = os.path.join(ds_seq_path, img_1_base_name + "_" + DESCRIPTOR_SUFFIX)
+    kp_1_path = os.path.join(kp_seq_path, img_1_base_name + "_" + KEYPOINT_SUFFIX)
 
     while img_num <= len(images):
         current_img = images[img_num - 1]
@@ -56,15 +57,17 @@ def generate_results(desc, sequence):
         current_ds = img_base_name + "_" + DESCRIPTOR_SUFFIX
         current_kp = img_base_name + "_" + KEYPOINT_SUFFIX
         current_hom = "H1to" + str(img_num) + "p"
+        current_cor = img_base_name + "_" + CORRESPONDENCES_SUFFIX
 
-        img2_path = os.path.join(image_seq_path, current_img)
-        desc2_path = os.path.join(ds_seq_path, current_ds)
-        kp2_path = os.path.join(kp_seq_path, current_kp)
+        img_2_path = os.path.join(image_seq_path, current_img)
+        desc_2_path = os.path.join(ds_seq_path, current_ds)
+        kp_2_path = os.path.join(kp_seq_path, current_kp)
         hom_path = os.path.join(image_seq_path, current_hom)
+        cor_path = os.path.join(kp_seq_path, current_cor)
         draw_results_file = os.path.join(ds_seq_path, img_seq + "_draw_001" + "_" + '{0:03d}'.format(img_num) + ".png")
 
-        args = [directories["basetest_executable"], PARAMETERS_FILE_PATH, desc, img1_path, desc1_path, kp1_path, img2_path, desc2_path,
-                kp2_path, hom_path, distance, "-s", file_output, "-d", draw_results_file]
+        args = [directories["basetest_executable"], PARAMETERS_FILE_PATH, desc, img_1_path, desc_1_path, kp_1_path, img_2_path,
+                desc_2_path, kp_2_path, hom_path, distance, cor_path, "-s", file_output, "-d", draw_results_file]
 
         print(desc + ": " + database + " - " + sequence + ": " + images[0] + " to " + current_img)
         subprocess.run(args)
@@ -74,7 +77,7 @@ def generate_results(desc, sequence):
 
 if __name__ == "__main__":
     if len(sys.argv) < MIN_NUM_ARGS:
-        print("Usage: python basetest.py desc_name database_name [-results_only]")
+        print("Usage: python3 basetest.py desc_name database_name [-results_only]")
         sys.exit(1)
 
     desc_full_name = sys.argv[1]
@@ -120,12 +123,13 @@ if __name__ == "__main__":
         line = f.readline()
         while line != "":
             line_split = line.split("=")
-            var = line_split[0]
-            value = line_split[-1]
-            if(value[-1] == "\n"):
-                value = value[:-1]
-            if var == "distance":
-                distance = value
+            if len(line_split) >= 2:
+                var = line_split[0]
+                value = line_split[1]
+                if value[-1] == "\n":
+                    value = value[:-1]
+                if var == "DISTANCE":
+                    distance = value
             line = f.readline()
 
     db_sequences = sorted(os.listdir(results_ds_path))

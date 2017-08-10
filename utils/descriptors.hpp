@@ -20,10 +20,9 @@ extern "C" {
 #include <vl/liop.h>
 }
 
-typedef void (*Descriptor)(cv::Mat, std::vector<cv::KeyPoint>&, std::vector<cv::Mat>&, cv::Mat&, std::string);
+typedef void (*Descriptor)(cv::Mat, KeyPointCollection&, cv::Mat&, std::string);
 
-#define DESCRIPTOR_ARGS cv::Mat image, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::Mat>& affine, \
-	cv::Mat& descriptors, std::string parameter_file
+#define DESCRIPTOR_ARGS cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file
 
 #define DESCRIPTOR_MAP {"akaze", akaze}, \
 					   {"brief", brief}, \

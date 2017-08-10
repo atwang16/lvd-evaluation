@@ -32,6 +32,7 @@ Currently, the following detectors are supported:
 * ORB detector (`orb`)
 * SURF detector (`surf`)
 * U-SURF detector (`usurf`)
+* AKAZE detector (`akaze`)
 
 The first five detectors (`DoG`, `HesAff`, `HesLap`, `HarAff`, and `HarLap`) are implemented using the VlFeat library, and the remainder are implemented using OpenCV. To implement other detectors, one can either add implementations to `detectors.hpp` in the utils folder, or one can use other independent implementations, provided that the output data is identically formatted.
 
@@ -52,6 +53,7 @@ A `time.csv` file will also be created in the results directory of the database,
 The underlying C++ code for generating keypoints. Running `generate_keypoints` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory are passed directly to the executable.
 
 Usage: `./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination overwrite_flag`
+
        `./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination overwrite_flag`
 
 | Parameters | Description |
@@ -108,6 +110,7 @@ The time to generate a descriptor for each keypoint, the number of images, and t
 The underlying C++ code for generating descriptors. Running `generate_descriptors` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory are passed directly to the executable.
 
 Usage: `./generate_descriptors descriptor path_to_parameter_file image_dataset_root_folder keypoint_dataset_root_folder path_to_destination`
+
        `./generate_descriptors descriptor path_to_parameter_file path_to_image path_to_keypoint path_to_destination`
 
 | Parameters | Description |
@@ -122,3 +125,5 @@ Usage: `./generate_descriptors descriptor path_to_parameter_file image_dataset_r
 | `overwrite_flag` | 1 if previously existing files should be overwritten, or 0 otherwise |
 
 The executable can either be run on an image database or a single image, as shown in the two use cases.
+
+

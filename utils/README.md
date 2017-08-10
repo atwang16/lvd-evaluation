@@ -6,9 +6,35 @@ This directory contains various project-specific libraries and a Python tool for
 
 `detectors.hpp` contains implementations of several keypoint detectors, each of which accepts as input an image and parameter file and returns a set of keypoints and corresponding affine transformations.
 
+To add a detector to the library, add a prototype function to `detectors.hpp` and add the detector to `DETECTOR_MAP`. The function must have the form
+
+```
+void detector_name(Mat image, KeyPointCollection& kp_col, string parameter_file)
+```
+
+KeyPointCollection is a user-defined struct with the following definition:
+
+```
+struct KeyPointCollection {
+	std::vector<cv::KeyPoint> keypoints;
+	std::vector<cv::Mat> affine;
+};
+```
+
+Include the implementation of the detector in `detectors.cpp`. Refer to other implementations for examples.
+
 ## descriptors.hpp
 
 `descriptors.hpp` contains implementations of several descriptors, each of which accepts as input an image and corresponding set of keypoints and returns a set of descriptors, one for each keypoint.
+
+To add a descriptor to the library, add a prototype function to `descriptors.hpp` and add the descriptor to `DESCRIPTOR_MAP`. The function must have the form
+
+```
+void descriptor(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file)
+```
+
+Include the implementation of the detector in `detectors.cpp`. Refer to other implementations for examples.
+
 
 ## utils.hpp
 

@@ -15,6 +15,17 @@ Usage: `python3 basetest.py descriptor_name database_name [-results_only]`
 | `database_name` | the name of the database |
 | `-results_only` | skip running the base test and only process the prior recorded results |
 
+Parameters for `basetest.py` are extracted from `basetest_parameters.txt`, located in the same directory:
+
+| Parameters | Description |
+| ---------- | ----------- |
+| `DIST_RATIO_THRESH` | the threshold for the ratio of distances of the first nearest neighbor to the second nearest neighbor for a keypoint match |
+| `KP_DIST_THRESH` | the threshold in pixels for determining whether two keypoints are matching |
+| `CAP_CORRECT_DISPLAYED` | a flag which controls whether the number of keypoint matches displayed on the output image is capped |
+| `NB_KP_TO_DISPLAY` | the number of keypoint matches to display on the output image, if `CAP_CORRECT_DISPLAYED=1` |
+
+From the parameters file of the specific descriptor for which the base test is being run, the program will search for `DISTANCE` to set the appropriate distance metric (`L1`, `L2`, `HAMMING`, or `HAMMING2`). The default is `L2`.
+
 The base test stores the majority of results in `desc_dat_basetest.csv`, where `desc` is the name of the descriptor and `dat` is the first three letters of the database. Each row corresponds to one execution of the base test, with the following format:
 * image name 1
 * image name 2
@@ -54,12 +65,6 @@ Usage: `./basetest parameters_file descriptor_name img_1 desc_1 keypoint_1 img_2
 | `stat_results` | path to file where statistics of each basetest execution will be stored; must be proceeded with `-s` |
 | `draw_results` | path to file where image matching output will be stored; must be proceeded with `-d` |
 
-The distance metric must be one of the following:
-* `L2`
-* `L1`
-* `HAMMING`
-* `HAMMING2`
-
 Note that `stat_results` and `draw_results` are optional. If `stat_results` is not provided, the statistics for the match will be outputted directly to console and not saved.
 
 ## Image Retrieval
@@ -90,6 +95,7 @@ The visual dictionary for the given descriptor is stored in `descriptor_visual_d
 The underlying C++ code for computing Fisher vectors. Running `fishervectors` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory and parameters are passed directly to the executable. The `fishervectors` executable can also be run on a single pair of images rather than a complete database.
 
 Usage: `./fishervectors parameters_file desc_database results_folder [load_dictionary]`
+
        `./fishervectors parameters_file desc_file results_folder [load_dictionary]`
 
 | Parameters | Description |
@@ -113,7 +119,7 @@ Usage: `python3 imageretrieval.py descriptor_name database [-generate_fishervect
 | `-generate_fishervectors` | generate Fisher vectors for the database |
 | `-results_only` | skip running the base test and only process the prior recorded results |
 
-The parameters for `imageretrieval.py` are stored in parameters.txt:
+The parameters for `imageretrieval.py` are stored in `imageretrieval_parameters.txt`:
 
 | Parameters | Description |
 | ---------- | ----------- |
@@ -141,4 +147,5 @@ Usage: `./imageretrieval2 descriptor_name query_fisher fisher_database num_query
 | `fisher_database` | path to the database of Fisher vectors |
 | `num_query_images` | number of query images to exclude from beginning of each sequence |
 | `results_file` | path to file where results will be stored |
+
 

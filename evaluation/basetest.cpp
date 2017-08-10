@@ -11,7 +11,8 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 
-//#define DEBUG
+#define PATH_DELIMITER "/"
+#define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 
 using namespace std;
 using namespace cv;
@@ -21,11 +22,12 @@ int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
 	string dist_metric, desc_name, draw_results = "", stat_results = "";
-	string img_1_num, img_1_seq, img_1_name, img_2_num, img_2_seq, img_2_name;
+	string img_1_path, img_1_name, img_2_path, img_2_name, correspondences_path;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
+	vector< set<int> > correspondences;
 
-	if(argc < 11) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric [-s stat_results] [-d draw_results]\n";
+	if(argc < 12) {
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric correspondences [-s stat_results] [-d draw_results]\n";
 		return 1;
 	}
 
@@ -38,7 +40,6 @@ int main(int argc, char *argv[]) {
 	float kp_dist_thresh = 2.5f;
 	int cap_correct_displayed = 1;
 	int nb_kp_to_display = 50;
-	int verbose = 0;
 
 	while(getline(params, line)) {
 		boost::split(line_split, line, boost::is_any_of("="));
@@ -56,24 +57,16 @@ int main(int argc, char *argv[]) {
 		else if(var == "NB_KP_TO_DISPLAY") {
 			nb_kp_to_display = stof(value);
 		}
-		else if(var == "VERBOSE") {
-			verbose = stof(value);
-		}
-	}
-
-	if(verbose) {
-		cout << "Starting execution.\n";
 	}
 
 	// Parse remaining arguments
+	vector<string> img_1_split, img_2_split;
 	desc_name = argv[2];
-	img_1 = imread(argv[3], CV_LOAD_IMAGE_COLOR);
-	std::vector<std::string> img_1_path_split;
-	boost::split(img_1_path_split, argv[3], boost::is_any_of("/."));
-	img_1_seq = img_1_path_split[img_1_path_split.size()-2].substr(0, 7);
-	img_1_num = img_1_path_split[img_1_path_split.size()-2].substr(8, 3);
-	img_1_name = img_1_path_split[img_1_path_split.size()-2].substr(0, 11);
-	desc_1 = parse_file(argv[4], ',', CV_32F);
+	img_1_path = argv[3];
+	boost::split(img_1_split, img_1_path, BOOST_PATH_DELIMITER);
+	img_1_name = img_1_split.back();
+	img_1 = imread(img_1_path, CV_LOAD_IMAGE_COLOR);
+	desc_1 = parse_file(argv[4], ',', CV_8U);
 	kp_mat_1 = parse_file(argv[5], ',', CV_32F);
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp_1 = KeyPoint();
@@ -82,13 +75,11 @@ int main(int argc, char *argv[]) {
 		kp_vec_1.push_back(kp_1);
 	}
 
-	img_2 = imread(argv[6], CV_LOAD_IMAGE_COLOR);
-	std::vector<std::string> img_2_path_split;
-	boost::split(img_2_path_split, argv[6], boost::is_any_of("/,."));
-	img_2_seq = img_2_path_split[img_2_path_split.size()-2].substr(0, 7);
-	img_2_num = img_2_path_split[img_2_path_split.size()-2].substr(8, 3);
-	img_2_name = img_2_path_split[img_2_path_split.size()-2].substr(0, 11);
-	desc_2 = parse_file(argv[7], ',', CV_32F);
+	img_2_path = argv[3];
+	boost::split(img_2_split, img_2_path, BOOST_PATH_DELIMITER);
+	img_2_name = img_2_split.back();
+	img_2 = imread(img_2_path, CV_LOAD_IMAGE_COLOR);
+	desc_2 = parse_file(argv[7], ',', CV_8U);
 	kp_mat_2 = parse_file(argv[8], ',', CV_32F);
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp_2 = KeyPoint();
@@ -99,7 +90,9 @@ int main(int argc, char *argv[]) {
 	homography = parse_file(argv[9], ' ', CV_32F);
 	dist_metric = argv[10];
 
-	for(int arg_ind = 11; arg_ind < argc; arg_ind++) {
+	correspondences_path = argv[11];
+
+	for(int arg_ind = 12; arg_ind < argc; arg_ind++) {
 		if(strcmp(argv[arg_ind], "-s") == 0) {
 			if(++arg_ind < argc) {
 				stat_results = argv[arg_ind];
@@ -110,11 +103,6 @@ int main(int argc, char *argv[]) {
 				draw_results = argv[arg_ind];
 			}
 		}
-	}
-
-	if(img_1_seq != img_2_seq) {
-		cout << "Error: sequence codes do not match.\n";
-		return 1;
 	}
 
 	// Match descriptors from 1 to 2 using nearest neighbor ratio
@@ -133,24 +121,37 @@ int main(int argc, char *argv[]) {
 	high_resolution_clock::time_point end = high_resolution_clock::now();
 	long match_time = duration_cast<milliseconds>(end - start).count();
 
+	string current_line;
+	int num_correspondences = 0;
+	ifstream correspondences_file(correspondences_path);
+	while(getline(correspondences_file, current_line)) {
+		if(current_line != "") {
+			stringstream str_stream(current_line);
+			string single_value;
+			set<int> indices = set<int>();
+
+			// Read each value with delimiter
+			while(getline(str_stream, single_value, ',')) {
+				if(single_value != "") {
+					int i = stoi(single_value);
+					if(i != -1) {
+						num_correspondences++;
+						indices.insert(i);
+					}
+				}
+			}
+			correspondences.push_back(indices);
+		}
+	}
+
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i].queryIdx;
 		int kp_id_2 = good_matches[i].trainIdx;
-		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
+		if(correspondences[kp_id_1].find(kp_id_2) != correspondences[kp_id_1].end()) {
+//		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
 			correct_matches.push_back(good_matches[i]);
-		}
-	}
-
-	// Count total number of correspondences
-	int num_correspondences = 0;
-	for(int i = 0; i < kp_vec_1.size(); i++) {
-		for(int j = 0; j < kp_vec_2.size(); j++) {
-			if(is_overlapping(kp_vec_1[i], kp_vec_2[j], homography, kp_dist_thresh)) {
-				num_correspondences++;
-				break;
-			}
 		}
 	}
 
@@ -164,8 +165,8 @@ int main(int argc, char *argv[]) {
 	// Export metrics
 	if(stat_results == "") { // no directory specified for exporting results; print to console
 		cout << "Descriptor:                          " << desc_name              << "\n";
-		cout << "Image 1:                             " << argv[3]                << "\n";
-		cout << "Image 2:                             " << argv[6]                << "\n";
+		cout << "Image 1:                             " << img_1_path             << "\n";
+		cout << "Image 2:                             " << img_2_path             << "\n";
 		cout << "Descriptor Size (bytes):             " << descriptor_size        << "\n";
 		cout                                                                      << "\n";
 		cout << "Number of Keypoints for Image 1:     " << kp_vec_1.size()        << "\n";

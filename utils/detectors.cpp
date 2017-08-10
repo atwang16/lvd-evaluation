@@ -296,3 +296,20 @@ void usurf(cv::Mat image, KeyPointCollection& kp_col, std::string parameter_file
 	usurf->detect(image, kp_col.keypoints);
 }
 
+void akaze(Mat image, KeyPointCollection& kp_col, string parameter_file) {
+	map<string, double> params = {{"descriptor_type", cv::AKAZE::DESCRIPTOR_MLDB},
+								  {"descriptor_size", 0},
+								  {"descriptor_channels", 3},
+								  {"threshold", 0.001f},
+								  {"n_octaves", 4},
+								  {"n_octave_layers", 4},
+								  {"diffusivity", cv::KAZE::DIFF_PM_G2}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::Feature2D> akaze =
+			cv::AKAZE::create(dtob(params["descriptor_type"]), params["descriptor_size"], params["descriptor_channels"], params["threshold"],
+					params["n_octaves"], params["n_octave_layers"], params["diffusivity"]);
+	akaze->detect(image, kp_col.keypoints);
+}
+

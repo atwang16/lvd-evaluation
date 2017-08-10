@@ -13,7 +13,7 @@ using namespace std;
 using namespace cv;
 
 
-void akaze(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void akaze(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"descriptor_type", cv::AKAZE::DESCRIPTOR_MLDB},
 								  {"descriptor_size", 0},
 								  {"descriptor_channels", 3},
@@ -27,10 +27,11 @@ void akaze(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 	cv::Ptr<cv::Feature2D> akaze = cv::AKAZE::create(params["descriptor_type"], params["descriptor_size"],
 			params["descriptor_channels"], params["threshold"], params["n_octaves"], params["n_octave_layers"],
 			params["diffusivity"]);
-	akaze->detectAndCompute(image, cv::noArray(), keypoints, descriptors, false);
+	akaze->detectAndCompute(image, cv::noArray(), kp_col.keypoints, descriptors, false); // seems to have a bug that causes it to produce different
+																						 // descriptors when not computing both simultaneously
 }
 
-void brief(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void brief(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"bytes", 32},
 								  {"use_orientation", 0}};
 
@@ -38,10 +39,10 @@ void brief(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 
 	cv::Ptr<cv::xfeatures2d::BriefDescriptorExtractor> brief =
 			cv::xfeatures2d::BriefDescriptorExtractor::create(params["bytes"], dtob(params["use_orientation"]));
-	brief->compute(image, keypoints, descriptors);
+	brief->compute(image, kp_col.keypoints, descriptors);
 }
 
-void brisk(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void brisk(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"agast_threshold", 30},
 								  {"n_octaves", 3},
 								  {"pattern_scale", 1.0}};
@@ -50,19 +51,19 @@ void brisk(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 
 	cv::Ptr<cv::Feature2D> brisk =
 			cv::BRISK::create(params["agast_threshold"], params["n_octaves"], params["pattern_scale"]);
-	brisk->compute(image, keypoints, descriptors);
+	brisk->compute(image, kp_col.keypoints, descriptors);
 }
 
-void cslbp(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void cslbp(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"threshold", 0.1},
 								  {"patch_size", 20}};
 
 	load_parameters(parameter_file, params);
 
-	descriptors = cv::Mat::zeros(keypoints.size(), 16, CV_8U);
+	descriptors = cv::Mat::zeros(kp_col.keypoints.size(), 16, CV_8U);
 
-	for(int i = 0; i < keypoints.size(); i++) {
-		cv::Mat patch = get_patch(image, params["patch_size"], keypoints[i].pt, affine[i]);
+	for(int i = 0; i < kp_col.keypoints.size(); i++) {
+		cv::Mat patch = get_patch(image, params["patch_size"], kp_col.keypoints[i].pt, kp_col.affine[i]);
 
 		for(int x = 1; x < patch.cols - 1; x++) {
 			for(int y = 1; y < patch.rows - 1; y++) {
@@ -76,7 +77,7 @@ void cslbp(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 	}
 }
 
-void freak(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void freak(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"orientation_normalized", 1},
 								  {"scale_normalized", 1},
 								  {"pattern_scale", 22.0f},
@@ -87,10 +88,10 @@ void freak(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 	cv::Ptr<cv::Feature2D> freak =
 			cv::xfeatures2d::FREAK::create(dtob(params["orientation_normalized"]), dtob(params["scale_normalized"]),
 					params["pattern_scale"], params["n_octaves"]);
-	freak->compute(image, keypoints, descriptors);
+	freak->compute(image, kp_col.keypoints, descriptors);
 }
 
-void kaze(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void kaze(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"extended", 0},
 								  {"upright", 0},
 								  {"threshold", 0.001f},
@@ -103,45 +104,45 @@ void kaze(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, c
 	cv::Ptr<cv::Feature2D> kaze =
 			cv::KAZE::create(dtob(params["extended"]), dtob(params["upright"]), params["threshold"],
 					params["n_octaves"], params["n_octave_layers"], params["diffusivity"]);
-	kaze->compute(image, keypoints, descriptors);
+	kaze->compute(image, kp_col.keypoints, descriptors);
 }
 
-void latch(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void latch(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {};
 
 	load_parameters(parameter_file, params);
 
 	cv::Ptr<cv::Feature2D> latch = cv::xfeatures2d::LATCH::create();
-	latch->compute(image, keypoints, descriptors);
+	latch->compute(image, kp_col.keypoints, descriptors);
 }
 
-void liop(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void liop(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"patch_size", 41}};
 
 	load_parameters(parameter_file, params);
 
 	VlLiopDesc *liop = vl_liopdesc_new_basic(params["patch_size"]);
-	descriptors = cv::Mat::zeros(keypoints.size(), vl_liopdesc_get_dimension(liop), CV_8U);
+	descriptors = cv::Mat::zeros(kp_col.keypoints.size(), vl_liopdesc_get_dimension(liop), CV_8U);
 
-	for(int i = 0; i < keypoints.size(); i++) {
-		cv::Mat patch = get_patch(image, params["patch_size"], keypoints[i].pt, affine[i]);
+	for(int i = 0; i < kp_col.keypoints.size(); i++) {
+		cv::Mat patch = get_patch(image, params["patch_size"], kp_col.keypoints[i].pt, kp_col.affine[i]);
 		vl_liopdesc_process(liop, (float *)descriptors.data + i * descriptors.cols, (float *)patch.data);
 	}
 
 	vl_liopdesc_delete(liop);
 }
 
-void lucid(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void lucid(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"lucid_kernel", 1},
 								  {"blur_kernel", 2}};
 
 	load_parameters(parameter_file, params);
 
 	cv::Ptr<cv::Feature2D> lucid = cv::xfeatures2d::LUCID::create(params["lucid_kernel"], params["blur_kernel"]);
-	lucid->compute(image, keypoints, descriptors);
+	lucid->compute(image, kp_col.keypoints, descriptors);
 }
 
-void orb(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void orb(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"n_features", 10000},
 								  {"scale_factor", 1.2},
 								  {"n_levels", 8},
@@ -157,10 +158,10 @@ void orb(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv
 	cv::Ptr<cv::Feature2D> orb = cv::ORB::create(params["n_features"], params["scale_factor"],
 			params["n_levels"],params["edge_thresh"], params["first_level"], params["wta_k"],
 			params["score_type"], params["patch_size"], params["fast_thresh"]);
-	orb->compute(image, keypoints, descriptors);
+	orb->compute(image, kp_col.keypoints, descriptors);
 }
 
-void sift(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void sift(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"n_features", 0},
 								  {"n_octave_layers", 3},
 								  {"contrast_threshold", 0.04},
@@ -171,10 +172,10 @@ void sift(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, c
 
 	cv::Ptr<cv::Feature2D> sift = cv::xfeatures2d::SIFT::create(params["n_features"], params["n_octave_layers"],
 			params["contrast_threshold"], params["edge_threshold"], params["sigma"]);
-	sift->compute(image, keypoints, descriptors);
+	sift->compute(image, kp_col.keypoints, descriptors);
 }
 
-void surf(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void surf(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"hessian_threshold", 100},
 								  {"n_octaves", 4},
 								  {"n_octave_layers", 3},
@@ -185,10 +186,10 @@ void surf(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, c
 
 	cv::Ptr<cv::Feature2D> surf = cv::xfeatures2d::SURF::create(params["hessian_threshold"], params["n_octaves"],
 			params["n_octave_layers"], dtob(params["extended"]), upright);
-	surf->compute(image, keypoints, descriptors);
+	surf->compute(image, kp_col.keypoints, descriptors);
 }
 
-void usurf(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, cv::Mat& descriptors, std::string parameter_file) {
+void usurf(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"hessian_threshold", 100},
 								  {"n_octaves", 4},
 								  {"n_octave_layers", 3},
@@ -199,6 +200,6 @@ void usurf(cv::Mat image, vector<KeyPoint>& keypoints, vector<cv::Mat>& affine, 
 
 	cv::Ptr<cv::Feature2D> surf = cv::xfeatures2d::SURF::create(params["hessian_threshold"], params["n_octaves"],
 			params["n_octave_layers"], dtob(params["extended"]), upright);
-	surf->compute(image, keypoints, descriptors);
+	surf->compute(image, kp_col.keypoints, descriptors);
 }
 
