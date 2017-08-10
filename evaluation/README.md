@@ -5,13 +5,15 @@
 ### basetest.py
 
 The Python interface code for applying the base test to descriptors of a database, evaluating the ability of the descriptor to compute invariant descriptions of keypoints and produce a high proportion of correct matches between keypoints of two images. Evaluates descriptors based on comparison of keypoint matching to ground truth homographies. For each sequence of a database, the descriptors of the first image are matched to those of each other image in the sequence using a brute force matching scheme with the associated distance metric between descriptors. The matches are further refined by applying a distance ratio threshold, and the remaining matches are compared to the ground-truth homography to determine how many of those matches are correct matches. Results are outputted to a .csv file, and the matching ratio, matching score, precision, and recall are calculated across all comparisons.
-If the file is moved relative to the project root folder, where project_structure.txt is located, the path directory set in file for ROOT_PATH must be changed. 
+If the file is moved relative to the project root folder, where project_structure.txt is located, the path directory set in file for `ROOT_PATH` must be changed. 
 
 Usage: `python3 basetest.py descriptor_name database_name [-results_only]`
 
-| descriptor_name | the name of the descriptor |
-| database_name | the name of the database |
-| -results_only | skip running the base test and only process the prior recorded results |
+| Parameters | Description |
+| ---------- | ----------- |
+| `descriptor_name` | the name of the descriptor |
+| `database_name` | the name of the database |
+| `-results_only` | skip running the base test and only process the prior recorded results |
 
 The base test stores the majority of results in `desc_dat_basetest.csv`, where `desc` is the name of the descriptor and `dat` is the first three letters of the database. Each row corresponds to one execution of the base test, with the following format:
 * image name 1
@@ -35,26 +37,28 @@ For each comparison, images are also created which provide a visual for the matc
 
 The underlying C++ code for running the base test. Running basetest directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory and parameters are passed directly to the executable. Furthermore, the basetest executable is designed to be run on a single pair of images rather than a complete database.
 
-Usage: ./basetest parameters_file descriptor_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric [-s stat_results] [-d draw_results]
+Usage: `./basetest parameters_file descriptor_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric [-s stat_results] [-d draw_results]`
 
-| parameters_file | path to a text file with all of the parameters |
-| descriptor_name | name of descriptor |
-| img_1 | path to image 1 |
-| desc_1 | path to file with descriptors for image 1 |
-| keypoint_1 | path to file with keypoints for image 1 |
-| img_2 | path to image 2 |
-| desc_2 | path to file with descriptors for image 2 |
-| keypoint_2 | path to file with keypoints for image 2 |
-| homography | path to file with ground-truth homography |
-| dist_metric | name of distance metric used to compare descriptors |
-| stat_results | path to file where statistics of each basetest execution will be stored; must be proceeded with -s |
-| draw_results | path to file where image matching output will be stored; must be proceeded with -d |
+| Parameters | Description |
+| ---------- | ----------- |
+| `parameters_file` | path to a text file with all of the parameters |
+| `descriptor_name` | name of descriptor |
+| `img_1` | path to image 1 |
+| `desc_1` | path to file with descriptors for image 1 |
+| `keypoint_1` | path to file with keypoints for image 1 |
+| `img_2` | path to image 2 |
+| `desc_2` | path to file with descriptors for image 2 |
+| `keypoint_2` | path to file with keypoints for image 2 |
+| `homography` | path to file with ground-truth homography |
+| `dist_metric` | name of distance metric used to compare descriptors |
+| `stat_results` | path to file where statistics of each basetest execution will be stored; must be proceeded with `-s` |
+| `draw_results` | path to file where image matching output will be stored; must be proceeded with `-d` |
 
 The distance metric must be one of the following:
-* L2
-* L1
-* HAMMING
-* HAMMING2
+* `L2`
+* `L1`
+* `HAMMING`
+* `HAMMING2`
 
 Note that `stat_results` and `draw_results` are optional. If `stat_results` is not provided, the statistics for the match will be outputted directly to console and not saved.
 
@@ -66,44 +70,54 @@ Computes a bag-of-words dictionary based on a training subset of the description
 
 Usage: `python3 fishervectors.py descriptor_name database_name`
 
-| descriptor_name | name of descriptor |
-| database_name | name of database |
+| Parameters | Description |
+| ---------- | ----------- |
+| `descriptor_name` | name of descriptor |
+| `database_name` | name of database |
 
-The visual dictionary for the given descriptor is stored in `descriptor_visual_dictionary.csv` and can be used to compute the Fisher vectors for other datasets without needing to train new clusters. Para meters for the fishervectors.py routine are stored in Fisher_parameters.txt.
+The visual dictionary for the given descriptor is stored in `descriptor_visual_dictionary.csv` and can be used to compute the Fisher vectors for other datasets without needing to train new clusters. Parameters for the `fishervectors.py` routine are stored in `fisher_parameters.txt`.
 
-| MAX_EM_ITERATIONS | Maximum number of EM iterations in computation of Gaussian mixture model |
-| NUM_CLUSTERS | The number of clusters in the Gaussian mixture model |
-| NUMBER_DESCRIPTORS_TO_SAMPLE | The number of descriptor vectors used in the training set |
-| FIRST_TRAINING_SEQUENCE | The ID of the first image sequence used in the training set |
-| NUMBER_OF_TRAINING_SEQUENCES | The number of image sequences used in the training set, starting from FIRST_TRAINING_SEQUENCE. If 0, all sequences will be used starting from FIRST_TRAINING_SEQUENCE. |
+| Parameters | Description |
+| ---------- | ----------- |
+| `MAX_EM_ITERATIONS` | Maximum number of EM iterations in computation of Gaussian mixture model |
+| `NUM_CLUSTERS` | The number of clusters in the Gaussian mixture model |
+| `NUMBER_DESCRIPTORS_TO_SAMPLE` | The number of descriptor vectors used in the training set |
+| `FIRST_TRAINING_SEQUENCE` | The ID of the first image sequence used in the training set |
+| `NUMBER_OF_TRAINING_SEQUENCES` | The number of image sequences used in the training set, starting from `FIRST_TRAINING_SEQUENCE`. If 0, all sequences will be used starting from `FIRST_TRAINING_SEQUENCE`. |
 
 ### fishervectors.cpp
 
-The underlying C++ code for computing Fisher vectors. Running fishervectors directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory and parameters are passed directly to the executable. The fishervectors executable can also be run on a single pair of images rather than a complete database.
+The underlying C++ code for computing Fisher vectors. Running `fishervectors` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory and parameters are passed directly to the executable. The `fishervectors` executable can also be run on a single pair of images rather than a complete database.
 
 Usage: `./fishervectors parameters_file desc_database results_folder [load_dictionary]`
        `./fishervectors parameters_file desc_file results_folder [load_dictionary]`
 
-| parameters_file | path to file with parameters |
-| desc_database | path to folder with descriptors |
-| desc_file | path to a file with descriptors for a single image |
-| results_folder | path to folder where results will be stored |
-| load_dictionary | if provided, the visual dictionary will be loaded from here if the file exists or saved there after creating it |
+| Parameters | Description |
+| ---------- | ----------- |
+| `parameters_file` | path to file with parameters |
+| `desc_database` | path to folder with descriptors |
+| `desc_file` | path to a file with descriptors for a single image |
+| `results_folder` | path to folder where results will be stored |
+| `load_dictionary` | if provided, the visual dictionary will be loaded from here if the file exists or saved there after creating it |
 
 ### imageretrieval.py
 
-Runs an image retrieval test on a specified dataset, using the associated Fisher vectors and cosine similarity to determine a similarity metric between images. For each query image, the distance is measured to the database images and rankedto produce mean average precision and success rate metrics. imageretrieval.py is the Python interface code for imageretrieval.cpp, which makes it easier to generate the directory paths for the underlying C++ code.
+Runs an image retrieval test on a specified dataset, using the associated Fisher vectors and cosine similarity to determine a similarity metric between images. For each query image, the distance is measured to the database images and rankedto produce mean average precision and success rate metrics. `imageretrieval.py` is the Python interface code for `imageretrieval.cpp`, which makes it easier to generate the directory paths for the underlying C++ code.
 
 Usage: `python3 imageretrieval.py descriptor_name database [-generate_fishervectors] [-results_only]`
 
-| descriptor_name | name of the descriptor |
-| database | name of the database |
-| -generate_fishervectors | generate Fisher vectors for the database |
-| -results_only | skip running the base test and only process the prior recorded results |
+| Parameters | Description |
+| ---------- | ----------- |
+| `descriptor_name` | name of the descriptor |
+| `database` | name of the database |
+| `-generate_fishervectors` | generate Fisher vectors for the database |
+| `-results_only` | skip running the base test and only process the prior recorded results |
 
-The parameters for imageretrieval.py are stored in parameters.txt:
+The parameters for `imageretrieval.py` are stored in parameters.txt:
 
-| QUERY_SAMPLE_SIZE | the number of queries used in the image retrieval test for each sequence |
+| Parameters | Description |
+| ---------- | ----------- |
+| `QUERY_SAMPLE_SIZE` | the number of queries used in the image retrieval test for each sequence |
 
 If the query size is 0, then every image will be used as a query. Otherwise, the first `QUERY_SAMPLE_SIZE` images will be used as queries, and the remainder of the images will comprise the search database.
 
@@ -116,12 +130,15 @@ Refer to the paper for definitions of the evaluation metrics.
 
 ### imageretrieval.cpp
 
-The underlying C++ code for the image retrieval test. Running imageretrieval directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory are passed directly to the executables.
+The underlying C++ code for the image retrieval test. Running `imageretrieval` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory are passed directly to the executables.
 
-Usage: ./imageretrieval2 descriptor_name query_fisher fisher_database num_query_images [results_file]
+Usage: `./imageretrieval2 descriptor_name query_fisher fisher_database num_query_images [results_file]`
 
-| descriptor_name | name of descriptor |
-| query_fisher | path to the Fisher vector for the query image |
-| fisher_database | path to the database of Fisher vectors |
-| num_query_images | number of query images to exclude from beginning of each sequence |
-| results_file | path to file where results will be stored |
+| Parameters | Description |
+| ---------- | ----------- |
+| `descriptor_name` | name of descriptor |
+| `query_fisher` | path to the Fisher vector for the query image |
+| `fisher_database` | path to the database of Fisher vectors |
+| `num_query_images` | number of query images to exclude from beginning of each sequence |
+| `results_file` | path to file where results will be stored |
+

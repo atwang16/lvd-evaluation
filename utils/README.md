@@ -4,15 +4,15 @@ This directory contains various project-specific libraries and a Python tool for
 
 ## detectors.hpp
 
-detectors.hpp contains implementations of several keypoint detectors, each of which accepts as input an image and parameter file and returns a set of keypoints and corresponding affine transformations.
+`detectors.hpp` contains implementations of several keypoint detectors, each of which accepts as input an image and parameter file and returns a set of keypoints and corresponding affine transformations.
 
 ## descriptors.hpp
 
-descriptors.hpp contains implementations of several descriptors, each of which accepts as input an image and corresponding set of keypoints and returns a set of descriptors, one for each keypoint.
+`descriptors.hpp` contains implementations of several descriptors, each of which accepts as input an image and corresponding set of keypoints and returns a set of descriptors, one for each keypoint.
 
 ## utils.hpp
 
-utils.hpp contains a variety of functions widely used throughout the project, such as a routine to parse .csv files and return OpenCV matrices.
+`utils.hpp` contains a variety of functions widely used throughout the project, such as a routine to parse .csv files and return OpenCV matrices.
 
 ## format_database.py
 
@@ -20,10 +20,13 @@ A utility to format image databases so that they are compatible with the project
 
 Usage: `python3 format_database.py database`
 
-| database | the name of the database to be formatted |
+| Parameters | Description |
+| ---------- | ----------- |
+| `database` | the name of the database to be formatted |
 
 The code contains two pre-processing lines, which allow the user to adjust the names of the sequences, images, and homography files as necessary (e.g. removing the first `n` characters from each name) before formatting them. To format the database correctly, sequences should originally be named with only their sequence names. Image labeling is based on sorting, and so provided that the images are in the correct order their original names will be ignored in formatting. The final format of the database should be as follows, assuming below that the database is named "database":
 
+```
 database
 > dat_001_sequencename
 >> dat_001_001.*
@@ -50,7 +53,9 @@ database
 >> H1to3p
 >> ...
 > ...
+```
 
 The final names of the sequences and images will be printed to console, and the user will be prompted to confirm that the formatting appears correct before continuing.
 
-The currently supported file extensions are .jpg, .png, .ppm, and .pgm. Ground-truth homographies, labeled H1toXp, are always from image 1 to another image within the sequence.
+The currently supported file extensions are .jpg, .png, .ppm, and .pgm. Ground-truth homographies, labeled `H1toXp`, are always from image 1 to another image within the sequence.
+
