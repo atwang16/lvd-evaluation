@@ -17,7 +17,6 @@
 #include <set>
 
 using namespace boost::filesystem;
-using namespace std::chrono;
 using namespace std;
 using namespace cv;
 
