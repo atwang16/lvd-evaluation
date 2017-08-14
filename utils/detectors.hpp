@@ -42,7 +42,7 @@ typedef void (*Detector)(cv::Mat, KeyPointCollection&, std::string);
 					 {"kaze", kaze},                   \
 					 {"orb", orb},                     \
 					 {"surf", surf},                   \
-					 {"usurf", usurf}                  \
+					 {"usurf", usurf},                 \
 					 {"akaze", akaze}
 
 #define DETECTOR_ARGS cv::Mat image, KeyPointCollection& keypoints, std::string parameter_file

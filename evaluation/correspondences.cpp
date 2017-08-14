@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Parse remaining arguments
-	kp_mat_1 = parse_file(argv[1], ',', CV_32F);
+	kp_mat_1 = parse_file(argv[1], ',');
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp = KeyPoint();
 		kp.pt.x = kp_mat_1.at<float>(i, 0);
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 		kp_vec_1.push_back(kp);
 	}
 
-	kp_mat_2 = parse_file(argv[2], ',', CV_32F);
+	kp_mat_2 = parse_file(argv[2], ',');
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp = KeyPoint();
 		kp.pt.x = kp_mat_2.at<float>(i, 0);
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 		kp_vec_2.push_back(kp);
 	}
 
-	homography = parse_file(argv[3], ' ', CV_32F);
+	homography = parse_file(argv[3], ' ');
 	kp_dist_thresh = stof(argv[4]);
 	results_file = argv[5];
 

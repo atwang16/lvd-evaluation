@@ -34,12 +34,14 @@ Mat get_patch(Mat image, int patch_size, int center_x, int center_y, Mat affine)
 }
 
 
-void vl_covariant_detector(Mat image, KeyPointCollection& kp_col, VlCovDetMethod type, bool affine_transformation, float peak_threshold) {
+void vl_covariant_detector(Mat image, KeyPointCollection& kp_col, VlCovDetMethod type, bool affine_transformation,
+		double peak_threshold, double edge_threshold) {
 	VlCovDet * covdet = vl_covdet_new(type);
 	Mat image_fl;
 	image.convertTo(image_fl, CV_32F);
 
 	vl_covdet_set_peak_threshold(covdet, peak_threshold);
+	vl_covdet_set_edge_threshold(covdet, edge_threshold);
 	vl_covdet_put_image(covdet, (float *)image_fl.data, image.rows, image.cols);
 	vl_covdet_detect(covdet);
 
@@ -67,66 +69,69 @@ void vl_covariant_detector(Mat image, KeyPointCollection& kp_col, VlCovDetMethod
 		aff.at<float>(2, 2) = feature[i].frame.x   * feature[i].frame.x   + feature[i].frame.y   * feature[i].frame.y   - 1;
 
 		double size = pow(abs(determinant(aff)), 0.5);
-		float a = aff.at<float>(0, 0), b = aff.at<float>(0, 1) / 2.0, c = aff.at<float>(1, 1);
+		float a = aff.at<float>(0, 0), b = aff.at<float>(0, 1) * 2.0, c = aff.at<float>(1, 1);
 		double angle_rad = atan2(- (c - a + sqrt((c-a)*(c-a) + b*b)), -b);
 		double angle_deg = angle_rad / PI * 180 + 180;
 
-		if(size > 50) {
-			kp_col.keypoints.push_back(KeyPoint(feature[i].frame.x, feature[i].frame.y, size, angle_deg));
-			Mat trans = Mat::zeros(2, 3, CV_32F);
-			trans.at<float>(0, 0) = feature[i].frame.a11;
-			trans.at<float>(0, 1) = feature[i].frame.a12;
-			trans.at<float>(0, 2) = 0;
-			trans.at<float>(1, 0) = feature[i].frame.a21;
-			trans.at<float>(1, 1) = feature[i].frame.a22;
-			trans.at<float>(1, 2) = 0;
-			kp_col.affine.push_back(trans);
-		}
+		kp_col.keypoints.push_back(KeyPoint(feature[i].frame.x, feature[i].frame.y, size, angle_deg));
+		Mat trans = Mat::zeros(2, 3, CV_32F);
+		trans.at<float>(0, 0) = feature[i].frame.a11;
+		trans.at<float>(0, 1) = feature[i].frame.a12;
+		trans.at<float>(0, 2) = 0;
+		trans.at<float>(1, 0) = feature[i].frame.a21;
+		trans.at<float>(1, 1) = feature[i].frame.a22;
+		trans.at<float>(1, 2) = 0;
+		kp_col.affine.push_back(trans);
 	}
 }
 
 void difference_of_gaussians(Mat image, KeyPointCollection& kp_col, string parameter_file) {
-	map<string, double> params = {{"peak_threshold", 0.0}};
+	map<string, double> params = {{"peak_threshold", 0.01},
+								  {"edge_threshold", 10.0}};
 
 	load_parameters(parameter_file, params);
 
-	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_DOG, false, params["peak_threshold"]);
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_DOG, false, params["peak_threshold"], params["edge_threshold"]);
 }
 
 
 void hessian_laplace(Mat image, KeyPointCollection& kp_col, string parameter_file) {
-	map<string, double> params = {{"peak_threshold", 0.0}};
+	map<string, double> params = {{"peak_threshold", 160.0},
+								  {"edge_threshold", 10.0}};
 
 	load_parameters(parameter_file, params);
 
-	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, false, params["peak_threshold"]);
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, false, params["peak_threshold"], params["edge_threshold"]);
 }
 
 
 void harris_laplace(Mat image, KeyPointCollection& kp_col, string parameter_file) {
-	map<string, double> params = {{"peak_threshold", 0.0}};
+	map<string, double> params = {{"peak_threshold", 40.0},
+								  {"edge_threshold", 10.0}};
 
 	load_parameters(parameter_file, params);
 
-	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, false, params["peak_threshold"]);
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, false, params["peak_threshold"], params["edge_threshold"]);
 }
 
 
 void hessian_affine(Mat image, KeyPointCollection& kp_col, string parameter_file) {
-	map<string, double> params = {{"peak_threshold", 0.0}};
+	map<string, double> params = {{"peak_threshold", 160.0},
+								  {"edge_threshold", 10.0}};
 
 	load_parameters(parameter_file, params);
 
-	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, true, params["peak_threshold"]);
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HESSIAN_LAPLACE, true, params["peak_threshold"], params["edge_threshold"]);
 }
 
 
 void harris_affine(Mat image, KeyPointCollection& kp_col, string parameter_file) {
-	map<string, double> params = {{"peak_threshold", 0.0}};
+	map<string, double> params = {{"peak_threshold", 0.000002},
+								  {"edge_threshold", 10.0}};
 
 	load_parameters(parameter_file, params);
 
-	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, true, params["peak_threshold"]);
+	vl_covariant_detector(image, kp_col, VL_COVDET_METHOD_HARRIS_LAPLACE, true, params["peak_threshold"], params["edge_threshold"]);
 }
 
 
@@ -308,7 +313,7 @@ void akaze(Mat image, KeyPointCollection& kp_col, string parameter_file) {
 	load_parameters(parameter_file, params);
 
 	cv::Ptr<cv::Feature2D> akaze =
-			cv::AKAZE::create(dtob(params["descriptor_type"]), params["descriptor_size"], params["descriptor_channels"], params["threshold"],
+			cv::AKAZE::create(params["descriptor_type"], params["descriptor_size"], params["descriptor_channels"], params["threshold"],
 					params["n_octaves"], params["n_octave_layers"], params["diffusivity"]);
 	akaze->detect(image, kp_col.keypoints);
 }

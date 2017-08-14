@@ -161,19 +161,10 @@ int main(int argc, char *argv[]) {
 		if(overwrite || !exists(ds_path)) {
 			// Read the image and keypoint
 			cv::Mat img_mat = cv::imread(img_p, IMG_READ_COLOR);
-//			cout << kp_p << "\n";
-			cv::Mat kp_mat_unproc = parse_file(kp_p, ',', CV_32F);
+			cv::Mat kp_mat_unproc = parse_file(kp_p, ',');
 			kp_mat_unproc.convertTo(kp_mat_unproc, CV_32F);
 			vector<cv::KeyPoint> keypoints;
 			vector<cv::Mat> affine;
-
-//			cout << kp_mat_unproc.at<float>(0, 0) << "\n";
-//			for(int i = 0; i < kp_mat_unproc.rows; i++) {
-//				for(int j = 0; j < 6; j++) {
-//					cout << kp_mat_unproc.at<float>(i, j) << ",";
-//				}
-//				cout << "\n";
-//			}
 
 			KeyPointCollection kp_col;
 			for(int i = 0; i < kp_mat_unproc.rows; i++) {
@@ -230,7 +221,7 @@ int main(int argc, char *argv[]) {
 void compute(Descriptor d, string parameter_file, cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, double& desc_time) {
 	// Compute descriptors
 	high_resolution_clock::time_point start = high_resolution_clock::now();
-	(*d)(image, kp_col.keypoints, kp_col.affine, descriptors, parameter_file);
+	(*d)(image, kp_col, descriptors, parameter_file);
 	high_resolution_clock::time_point desc_done = high_resolution_clock::now();
 
 	int num_keypoints = kp_col.keypoints.size();

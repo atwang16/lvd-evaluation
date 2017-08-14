@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 	desc_name = argv[1];
 
 	string query_path = argv[2];
-	query_fv = parse_file(query_path, ',', CV_32F);
+	query_fv = parse_file(query_path, ',');
 	query_cat = get_cat(query_path);
 	vector<string> query_path_split;
 	boost::split(query_path_split, query_path, BOOST_PATH_DELIMITER);
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 	vector<float> distances;
 
 	for(int i = 0; i < fv_database.size(); i++) {
-		Mat db_fv = parse_file(fv_database[i], ',', CV_32F);
+		Mat db_fv = parse_file(fv_database[i], ',');
 
 		distances.push_back(cosine_similarity(query_fv, db_fv)); // use cosine similarity to calculate distances between fisher vectors
 	}

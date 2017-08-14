@@ -2,6 +2,33 @@
 
 ## Base Test
 
+### correspondences.py
+
+The Python interface code for computing the correct correspondences between keypoints for an image database. The results are used in `basetest` to measure the effectiveness of descriptors in identifying correct matches between keypoints.
+
+Usage: `python3 correspondences.py detector_name database_name
+
+| Parameters | Description |
+| ---------- | ----------- |
+| `descriptor_name` | the name of the descriptor |
+| `database_name` | the name of the database |
+
+Results are stored in the same location as keypoints, with the suffix `co.csv`. Each row corresponds to the index of the keypoint of image 1 in the sequence, and the indices listed in each row indicate matching keypoints of the image given by the filename. For keypoints in image 1 without a corresponding keypoint, `-1` is used to indicate that no matches were found.
+
+### correspondences.cpp
+
+The underlying C++ code for running correspondences. Running correspondences directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory and parameters are passed directly to the executable, on a single pair of images rather than a complete database.
+
+Usage: `./correspondences keypoint_1 keypoint_2 homography kp_dist_thresh results_file`
+
+| Parameters | Description |
+| ---------- | ----------- |
+| `keypoint_1` | path to file of keypoints for image 1 |
+| `keypoint_2` | path to file of keypoints for image 2 |
+| `homography` | path to file containing ground-truth homography from image 1 to 2 |
+| `kp_dist_thresh` | threshold for the distance, in pixels, between a projected keypoint of image 1 and a keypoint of image 2 which determines when keypoints are said to correspond to the same point |
+| `results_file` | path to file where results of correspondence computations will be saved |
+
 ### basetest.py
 
 The Python interface code for applying the base test to descriptors of a database, evaluating the ability of the descriptor to compute invariant descriptions of keypoints and produce a high proportion of correct matches between keypoints of two images. Evaluates descriptors based on comparison of keypoint matching to ground truth homographies. For each sequence of a database, the descriptors of the first image are matched to those of each other image in the sequence using a brute force matching scheme with the associated distance metric between descriptors. The matches are further refined by applying a distance ratio threshold, and the remaining matches are compared to the ground-truth homography to determine how many of those matches are correct matches. Results are outputted to a .csv file, and the matching ratio, matching score, precision, and recall are calculated across all comparisons.

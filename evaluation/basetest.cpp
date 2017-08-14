@@ -66,8 +66,8 @@ int main(int argc, char *argv[]) {
 	boost::split(img_1_split, img_1_path, BOOST_PATH_DELIMITER);
 	img_1_name = img_1_split.back();
 	img_1 = imread(img_1_path, CV_LOAD_IMAGE_COLOR);
-	desc_1 = parse_file(argv[4], ',', CV_8U);
-	kp_mat_1 = parse_file(argv[5], ',', CV_32F);
+	desc_1 = parse_file(argv[4], ',');
+	kp_mat_1 = parse_file(argv[5], ',');
 	for(int i = 0; i < kp_mat_1.rows; i++) {
 		KeyPoint kp_1 = KeyPoint();
 		kp_1.pt.x = kp_mat_1.at<float>(i, 0);
@@ -79,15 +79,15 @@ int main(int argc, char *argv[]) {
 	boost::split(img_2_split, img_2_path, BOOST_PATH_DELIMITER);
 	img_2_name = img_2_split.back();
 	img_2 = imread(img_2_path, CV_LOAD_IMAGE_COLOR);
-	desc_2 = parse_file(argv[7], ',', CV_8U);
-	kp_mat_2 = parse_file(argv[8], ',', CV_32F);
+	desc_2 = parse_file(argv[7], ',');
+	kp_mat_2 = parse_file(argv[8], ',');
 	for(int i = 0; i < kp_mat_2.rows; i++) {
 		KeyPoint kp_2 = KeyPoint();
 		kp_2.pt.x = kp_mat_2.at<float>(i, 0);
 		kp_2.pt.y = kp_mat_2.at<float>(i, 1);
 		kp_vec_2.push_back(kp_2);
 	}
-	homography = parse_file(argv[9], ' ', CV_32F);
+	homography = parse_file(argv[9], ' ');
 	dist_metric = argv[10];
 
 	correspondences_path = argv[11];

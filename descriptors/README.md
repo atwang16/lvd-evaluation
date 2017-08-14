@@ -67,6 +67,34 @@ Usage: `./generate_keypoints detector path_to_parameter_file image_dataset_root_
 
 The executable can either be run on an image database or a single image, as shown in the two use cases.
 
+### generate_patches.py
+
+The Python interface code for generating patches from keypoints. Patches are saved with the original image file extension in a subfolder within the same directory as the keypoints. The use of this tool is optional and primarily created for the use of externally-implemented descriptors which take patches directly as input.
+
+Usage: `python3 generate_patches.py detector_name database`
+
+| Parameters | Description |
+| ---------- | ----------- |
+| `detector` | the name of the keypoint detector which will be used to generate keypoints |
+| `database_name` | the name of the image database to which the detector will be applied |
+
+### generate_patches.cpp
+
+The underlying C++ code for generating patches from keypoints. Running `generate_keypoints` directly allows for execution of the same routines without the assumptions of the wrapper code, since paths to each directory are passed directly to the executable.
+
+Usage: `./generate_patches image_dataset_root_folder keypoint_dataset_root_folder path_to_destination patch_size`
+
+       `./generate_patches path_to_image path_to_keypoint path_to_destination patch_size`
+
+| Parameters | Description |
+| ---------- | ----------- |
+| `image_dataset_root_folder` | path to the directory containing the sequences of images |
+| `keypoint_dataset_root_folder` | path to the directory containing the keypoints of images |
+| `path_to_image` | path to a single image |
+| `path_to_destination` | path to the directory where results will be stored |
+| `patch_size` | size of patches |
+
+
 ## Generate Descriptors
 
 ### generate_descriptors.py

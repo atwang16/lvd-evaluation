@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 	// Amalgamate descriptors into one
 	cout << "Loading data...\n";
 	for(int i = 0; i < desc_vec.size(); i++) {
-		Mat m = parse_file(desc_vec[i], ',', CV_8U);
+		Mat m = parse_file(desc_vec[i], ',');
 		m.convertTo(m, CV_32F);
 		desc_vec_mat.push_back(m);
 		if(first_train_ind <= i && i < first_train_ind + num_train_imgs) {
