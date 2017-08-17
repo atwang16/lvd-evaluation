@@ -42,6 +42,8 @@ typedef void (*Descriptor)(cv::Mat, KeyPointCollection&, cv::Mat&, std::string);
 
 void akaze(DESCRIPTOR_ARGS);
 
+void binboost(DESCRIPTOR_ARGS);
+
 void brief(DESCRIPTOR_ARGS);
 
 void brisk(DESCRIPTOR_ARGS);
