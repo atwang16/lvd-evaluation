@@ -31,6 +31,18 @@ void akaze(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std:
 																						 // descriptors when not computing both simultaneously
 }
 
+void binboost(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
+	map<string, double> params = {{"desc", cv::xfeatures2d::BoostDesc::BINBOOST_256},
+								  {"use_scale_orientation", 1},
+								  {"scale_factor", 6.25}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::xfeatures2d::BoostDesc> binboost =
+			cv::xfeatures2d::BoostDesc::create(dtob(params["use_scale_orientation"]), params["scale_factor"]);
+	binboost->compute(image, kp_col.keypoints, descriptors);
+}
+
 void brief(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
 	map<string, double> params = {{"bytes", 32},
 								  {"use_orientation", 0}};
@@ -75,6 +87,23 @@ void cslbp(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std:
 			}
 		}
 	}
+}
+
+void daisy(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {
+	map<string, double> params = {{"radius", 15},
+								  {"q_radius", 3},
+								  {"q_theta", 8},
+								  {"q_hist", 8},
+								  {"norm", cv::xfeatures2d::DAISY::NRM_NONE},
+								  {"interpolation", 1},
+								  {"use_orientation", 0}};
+
+	load_parameters(parameter_file, params);
+
+	cv::Ptr<cv::xfeatures2d::DAISY> daisy =
+			cv::xfeatures2d::DAISY::create(params["radius"], params["q_radius"], params["q_theta"], params["q_hist"],
+					params["norm"], noArray(), dtob(params["interpolation"]), dtob(params["use_orientation"]));
+	daisy->compute(image, kp_col.keypoints, descriptors);
 }
 
 void freak(cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file) {

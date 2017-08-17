@@ -24,18 +24,19 @@ typedef void (*Descriptor)(cv::Mat, KeyPointCollection&, cv::Mat&, std::string);
 
 #define DESCRIPTOR_ARGS cv::Mat image, KeyPointCollection& kp_col, cv::Mat& descriptors, std::string parameter_file
 
-#define DESCRIPTOR_MAP {"akaze", akaze}, \
-					   {"brief", brief}, \
-					   {"brisk", brisk}, \
-					   {"cslbp", cslbp}, \
-					   {"freak", freak}, \
-					   {"kaze", kaze},   \
-					   {"latch", latch}, \
-					   {"liop", liop},   \
-					   {"lucid", lucid}, \
-					   {"orb", orb},     \
-					   {"sift", sift},   \
-					   {"surf", surf},   \
+#define DESCRIPTOR_MAP {"akaze", akaze},       \
+					   {"binboost", binboost}, \
+					   {"brief", brief},       \
+					   {"brisk", brisk},       \
+					   {"cslbp", cslbp},       \
+					   {"freak", freak},       \
+					   {"kaze", kaze},         \
+					   {"latch", latch},       \
+					   {"liop", liop},         \
+					   {"lucid", lucid},       \
+					   {"orb", orb},           \
+					   {"sift", sift},         \
+					   {"surf", surf},         \
 					   {"usurf", usurf}
 
 

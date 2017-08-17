@@ -11,10 +11,13 @@
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <iostream>
 #include <string>
 #include <sstream>
 #include <algorithm>
 #include <set>
+#include <mat.h>
+#include <matrix.h>
 
 using namespace boost::filesystem;
 using namespace std;
@@ -23,18 +26,20 @@ using namespace cv;
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
 #define IMG_READ_COLOR cv::IMREAD_GRAYSCALE
+#define IMG_OUTPUT 0
+#define MAT_OUTPUT 1
 
 bool is_image(path fname);
 bool is_keypoint_file(path file_path);
 
 int main(int argc, char *argv[]) {
 	string parameter_file, image_directory, keypoint_directory, output_directory, database_name;
-	int patch_size = 0;
+	int patch_size = 0, type = IMG_OUTPUT;
 	bool single_image = false;
 
-	if(argc < 5) {
-		cout << "Usage ./generate_patches image_dataset_root_folder keypoint_dataset_root_folder path_to_destination patch_size" << "\n";
-		cout << "      ./generate_patches path_to_image path_to_keypoint path_to_destination patch_size" << "\n";
+	if(argc < 6) {
+		cout << "Usage ./generate_patches image_dataset_root_folder keypoint_dataset_root_folder path_to_destination patch_size type" << "\n";
+		cout << "      ./generate_patches path_to_image path_to_keypoint path_to_destination patch_size type" << "\n";
 		return 1;
 	}
 
@@ -42,6 +47,11 @@ int main(int argc, char *argv[]) {
 	keypoint_directory = argv[2];
 	output_directory = argv[3];
 	patch_size = stoi(argv[4]);
+	type = stoi(argv[5]);
+	if(type != IMG_OUTPUT && type != MAT_OUTPUT) {
+		cout << "Error: invalid type. Aborting...\n";
+		return 1;
+	}
 
 	// get all the sequences
 	vector<string> image_paths, keypoint_paths;
@@ -122,26 +132,29 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 
+		img_dir = output_directory;
 		if(single_image) {
-			img_dir = output_directory + PATH_DELIMITER
-					+ img_name;
-			patch_path = output_directory + PATH_DELIMITER
-					+ img_name + PATH_DELIMITER
-					+ img_name + "_ds.csv";
+			if(type == IMG_OUTPUT) {
+				img_dir += PATH_DELIMITER + img_name; // create directory
+				path dir(img_dir);
+				boost::filesystem::create_directories(dir);
+			}
 		}
 		else {
-			// get the type name (e.g. ref, e1, e2, etc.)
+			// get sequence name
 			vector<string> img_split;
 			boost::split(img_split, img_p, BOOST_PATH_DELIMITER);
 			string seq_name = img_split[img_split.size() - 2];
 
 			img_dir = output_directory + PATH_DELIMITER
 					+ database_name + PATH_DELIMITER
-					+ seq_name + PATH_DELIMITER
-					+ img_name;
+					+ seq_name;
+			if(type == IMG_OUTPUT) {
+				img_dir += PATH_DELIMITER + img_name; // create directory
+				path dir(img_dir);
+				boost::filesystem::create_directories(dir);
+			}
 		}
-		path dir(img_dir);
-		boost::filesystem::create_directories(dir);
 
 		// Read the image and keypoint
 		cv::Mat img_mat = cv::imread(img_p, IMG_READ_COLOR);
@@ -174,14 +187,56 @@ int main(int argc, char *argv[]) {
 		kp_col.affine = affine;
 
 		// Compute patches
-		for(int k = 0; k < kp_col.keypoints.size(); k++) {
-			std::stringstream ss;
-			ss << std::setw(5) << std::setfill('0') << k;
-			patch_path = img_dir + PATH_DELIMITER
-					+ img_name + "_pa_" + ss.str() + img_ext;
-			Mat patch = get_patch(img_mat, patch_size, kp_col.keypoints[k].pt, kp_col.affine[k]);
-			imwrite(patch_path, patch);
+		if(type == IMG_OUTPUT) {
+			for(int k = 0; k < kp_col.keypoints.size(); k++) {
+				std::stringstream ss;
+				ss << std::setw(5) << std::setfill('0') << k;
+				patch_path = img_dir + PATH_DELIMITER
+						+ img_name + "_pa_" + ss.str() + img_ext;
+				Mat patch = get_patch(img_mat, patch_size, kp_col.keypoints[k].pt, kp_col.affine[k]);
+				imwrite(patch_path, patch);
+			}
 		}
+		else {
+			MATFile *patches;
+			mxArray *arr;
+			float *arr_ptr;
+			patch_path = img_dir + PATH_DELIMITER
+					   + img_name + "_pa_" + img_ext;
+			const unsigned long int dimensions[4] = {kp_col.keypoints.size(), 1, (unsigned long int)patch_size, (unsigned long int)patch_size};
+			if((patches = matOpen(patch_path.c_str(), "w")) == NULL) {
+				cout << "Error creating file " << patch_path << "\n";
+				return 1;
+			}
+
+			if((arr = mxCreateNumericArray(4, dimensions, mxDOUBLE_CLASS, mxREAL)) == NULL) {
+				cout << "Error creating numeric array.\n";
+				return 1;
+			}
+			arr_ptr = (float *)arr;
+
+			for(int k = 0; k < kp_col.keypoints.size(); k++) {
+				Mat p = get_patch(img_mat, patch_size, kp_col.keypoints[k].pt, kp_col.affine[k]);
+				for(int c = 0; c < p.cols; c++) {
+					Mat p_trans;
+					transpose(p, p_trans);
+					memcpy(arr_ptr, (void *)p_trans.ptr<float>(c), sizeof(CV_32F) * p.rows);
+					arr_ptr += p.rows;
+
+				}
+			}
+
+			if(matPutVariable(patches, "Patches", arr) != 0) {
+				cout << "Error loading patches into file.\n";
+				return 1;
+			}
+
+			if(matClose(patches) != 0) {
+				cout << "Error closing file " << patch_path << "\n";
+				return 1;
+			}
+		}
+		cout << "Patches stored at " << patch_path << "\n\n";
 	}
 
 	return 0;

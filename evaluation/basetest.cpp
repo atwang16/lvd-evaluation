@@ -6,10 +6,11 @@
  */
 
 #include "utils.hpp"
-#include <cmath>
+#include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <cmath>
 
 #define PATH_DELIMITER "/"
 #define BOOST_PATH_DELIMITER boost::is_any_of(PATH_DELIMITER)
