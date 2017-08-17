@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
 			mxArray *arr;
 			float *arr_ptr;
 			patch_path = img_dir + PATH_DELIMITER
-					   + img_name + "_pa_" + img_ext;
+					   + img_name + "_pa.mat";
 			const unsigned long int dimensions[4] = {kp_col.keypoints.size(), 1, (unsigned long int)patch_size, (unsigned long int)patch_size};
 			if((patches = matOpen(patch_path.c_str(), "w")) == NULL) {
 				cout << "Error creating file " << patch_path << "\n";

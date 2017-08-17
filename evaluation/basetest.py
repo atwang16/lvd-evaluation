@@ -65,9 +65,11 @@ def generate_results(desc, sequence):
         hom_path = os.path.join(image_seq_path, current_hom)
         cor_path = os.path.join(kp_seq_path, current_cor)
         draw_results_file = os.path.join(ds_seq_path, img_seq + "_draw_001" + "_" + '{0:03d}'.format(img_num) + ".png")
+        with open(cor_path) as f:
+            num_correspondences = str(int(f.readline()))
 
         args = [directories["basetest_executable"], PARAMETERS_FILE_PATH, desc, img_1_path, desc_1_path, kp_1_path, img_2_path,
-                desc_2_path, kp_2_path, hom_path, distance, cor_path, "-s", file_output, "-d", draw_results_file]
+                desc_2_path, kp_2_path, hom_path, distance, num_correspondences, "-s", file_output, "-d", draw_results_file]
 
         print(desc + ": " + database + " - " + sequence + ": " + images[0] + " to " + current_img)
         subprocess.run(args)

@@ -23,12 +23,13 @@ int main(int argc, char *argv[]) {
 	Mat img_1, img_2, desc_1, desc_2, homography;
 	Mat kp_mat_1, kp_mat_2;
 	string dist_metric, desc_name, draw_results = "", stat_results = "";
-	string img_1_path, img_1_name, img_2_path, img_2_name, correspondences_path;
+	string img_1_path, img_1_name, img_2_path, img_2_name;
+	int num_correspondences;
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	vector< set<int> > correspondences;
 
 	if(argc < 12) {
-		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric correspondences [-s stat_results] [-d draw_results]\n";
+		cout << "Usage ./basetest parameters_file desc_name img_1 desc_1 keypoint_1 img_2 desc_2 keypoint_2 homography dist_metric num_correspondences [-s stat_results] [-d draw_results]\n";
 		return 1;
 	}
 
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
 		kp_vec_1.push_back(kp_1);
 	}
 
-	img_2_path = argv[3];
+	img_2_path = argv[6];
 	boost::split(img_2_split, img_2_path, BOOST_PATH_DELIMITER);
 	img_2_name = img_2_split.back();
 	img_2 = imread(img_2_path, CV_LOAD_IMAGE_COLOR);
@@ -91,7 +92,7 @@ int main(int argc, char *argv[]) {
 	homography = parse_file(argv[9], ' ');
 	dist_metric = argv[10];
 
-	correspondences_path = argv[11];
+	num_correspondences = stoi(argv[11]);
 
 	for(int arg_ind = 12; arg_ind < argc; arg_ind++) {
 		if(strcmp(argv[arg_ind], "-s") == 0) {
@@ -122,36 +123,12 @@ int main(int argc, char *argv[]) {
 	high_resolution_clock::time_point end = high_resolution_clock::now();
 	long match_time = duration_cast<milliseconds>(end - start).count();
 
-	string current_line;
-	int num_correspondences = 0;
-	ifstream correspondences_file(correspondences_path);
-	while(getline(correspondences_file, current_line)) {
-		if(current_line != "") {
-			stringstream str_stream(current_line);
-			string single_value;
-			set<int> indices = set<int>();
-
-			// Read each value with delimiter
-			while(getline(str_stream, single_value, ',')) {
-				if(single_value != "") {
-					int i = stoi(single_value);
-					if(i != -1) {
-						num_correspondences++;
-						indices.insert(i);
-					}
-				}
-			}
-			correspondences.push_back(indices);
-		}
-	}
-
 	// Use ground truth homography to check whether descriptors are actually matching, using associated keypoints
 	vector<DMatch> correct_matches;
 	for(int i = 0; i < good_matches.size(); i++) {
 		int kp_id_1 = good_matches[i].queryIdx;
 		int kp_id_2 = good_matches[i].trainIdx;
-		if(correspondences[kp_id_1].find(kp_id_2) != correspondences[kp_id_1].end()) {
-//		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
+		if(is_overlapping(kp_vec_1[kp_id_1], kp_vec_2[kp_id_2], homography, kp_dist_thresh)) {
 			correct_matches.push_back(good_matches[i]);
 		}
 	}

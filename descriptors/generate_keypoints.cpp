@@ -100,9 +100,7 @@ int main(int argc, char *argv[]) {
 		images.push_back(image_directory);
 	}
 	else {
-		cout << "Error: invalid input.\n";
-		cout << "Usage ./generate_keypoints detector path_to_parameter_file image_dataset_root_folder path_to_destination" << "\n";
-		cout << "      ./generate_keypoints detector path_to_parameter_file path_to_image path_to_destination" << "\n";
+		cout << "Error: invalid input for image.\n";
 		return 1;
 	}
 
@@ -175,7 +173,7 @@ int main(int argc, char *argv[]) {
 			num_keypoints += kp_col.keypoints.size();
 		}
 		else {
-			cout << "Keypoint already exists at " << kp_path << "\n" << "\n";
+			cout << "Keypoints already stored at " << kp_path << "\n" << "\n";
 		}
 	}
 

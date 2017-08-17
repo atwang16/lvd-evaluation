@@ -12,6 +12,7 @@ file_output = None
 PARAMETERS_FILE_PATH = os.path.join(os.getcwd(), "basetest_parameters.txt")
 KEYPOINT_SUFFIX = "kp.csv"
 kp_dist_thresh = 2.5
+flags = {"-overwrite": "0"}
 
 
 def is_keypoint(file):
@@ -19,7 +20,7 @@ def is_keypoint(file):
 
 
 def generate_results(det, sequence):
-    global directories
+    global directories, flags
     img_num = 2
     image_seq_path = os.path.join(directories["datasets_path"], sequence)
     kp_seq_path = os.path.join(directories["results_path"], sequence)
@@ -45,7 +46,8 @@ def generate_results(det, sequence):
             results_file = os.path.join(kp_seq_path, base_name + "_" + '{0:03d}'.format(img_num) + "_co.csv")
 
             if os.path.exists(kp2_path) and os.path.exists(hom_path):
-                args = [directories["correspondences_executable"], kp1_path, kp2_path, hom_path, kp_dist_thresh, results_file]
+                args = [directories["correspondences_executable"], kp1_path, kp2_path, hom_path, kp_dist_thresh,
+                        results_file, flags["-overwrite"]]
                 print(det + ": " + database + " - " + sequence + ": " + keypoints[0] + " to " + current_kp)
                 subprocess.run(args)
             img_num += 1
@@ -54,7 +56,7 @@ def generate_results(det, sequence):
 
 if __name__ == "__main__":
     if len(sys.argv) < MIN_NUM_ARGS:
-        print("Usage: python3 correspondences.py detector_name database_name")
+        print("Usage: python3 correspondences.py detector_name database_name [-overwrite]")
         sys.exit(1)
 
     detector = sys.argv[1]
@@ -76,6 +78,13 @@ if __name__ == "__main__":
             print("Error: could not find", directories[d].upper(), "in file:")
             print(" ", PROJECT_TREE)
             sys.exit(1)
+
+    arg_index = MIN_NUM_ARGS
+    while arg_index < len(sys.argv):
+        for f in flags:
+            if sys.argv[arg_index] == f:
+                flags[f] = "1"
+        arg_index += 1
 
     directories["datasets_path"] = os.path.join(directories["datasets_path"], database)
     directories["results_path"] = os.path.join(directories["results_path"], detector, database)
