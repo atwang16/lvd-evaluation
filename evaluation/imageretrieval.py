@@ -56,7 +56,7 @@ def generate_results(sequence):
     for file in expand_results:
         if is_fisher(file):
             fisher_vectors.append(file)
-    sorted(fisher_vectors)
+    fisher_vectors.sort()
 
     if len(fisher_vectors) == 0:
         print("Error: no fisher vectors found.")

@@ -31,7 +31,7 @@ def generate_results(det, sequence):
     for file in kp_seq_expanded:
         if is_keypoint(file):
             keypoints.append(file)
-    sorted(keypoints)
+    keypoints.sort()
 
     name_split = keypoints[0].split("_")
     base_name = name_split[0] + "_" + name_split[1]

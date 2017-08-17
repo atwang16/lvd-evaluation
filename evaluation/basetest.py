@@ -43,7 +43,7 @@ def generate_results(desc, sequence):
     for file in image_seq_expanded:
         if is_image(file):
             images.append(file)
-    sorted(images)
+    images.sort()
 
     img_1_path = os.path.join(image_seq_path, images[0])
     img_1_base_name, _ = os.path.splitext(images[0])
