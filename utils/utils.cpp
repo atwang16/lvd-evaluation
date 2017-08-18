@@ -10,10 +10,9 @@
 using namespace std;
 using namespace cv;
 
-Mat parse_file(string fname, char delimiter) {
+Mat parse_file(string fname, char delimiter, int type) {
 	ifstream inputfile(fname);
 	string current_line;
-	int type = CV_8U;
 
 	vector< vector<Data> > all_data;
 
@@ -25,10 +24,10 @@ Mat parse_file(string fname, char delimiter) {
 			string single_value;
 
 			// Read each value with delimiter
-			while(getline(str_stream,single_value, delimiter)) {
+			while(getline(str_stream, single_value, delimiter)) {
 				if(single_value != "") {
 					Data d;
-					if(single_value.find(".") != string::npos || type == CV_32F) {
+					if(type == CV_32F || single_value.find(".") != string::npos || single_value.find("-") != string::npos) {
 						type = CV_32F;
 						d.f = stof(single_value);
 					}
@@ -60,6 +59,10 @@ Mat parse_file(string fname, char delimiter) {
 	else {
 		return cv::Mat();
 	}
+}
+
+Mat parse_file(string fname, char delimiter) {
+	return parse_file(fname, delimiter, CV_8U);
 }
 
 int get_dist_metric(string metric) {

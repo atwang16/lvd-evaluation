@@ -22,6 +22,8 @@ union Data
     std::uint8_t u;
 };
 
+cv::Mat parse_file(std::string fname, char delimiter, int type);
+
 cv::Mat parse_file(std::string fname, char delimiter);
 
 int get_dist_metric(std::string metric);

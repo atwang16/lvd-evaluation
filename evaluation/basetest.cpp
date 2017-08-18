@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
 		kp_2.pt.y = kp_mat_2.at<float>(i, 1);
 		kp_vec_2.push_back(kp_2);
 	}
-	homography = parse_file(argv[9], ' ');
+	homography = parse_file(argv[9], ' ', CV_32F);
 	dist_metric = argv[10];
 
 	num_correspondences = stoi(argv[11]);

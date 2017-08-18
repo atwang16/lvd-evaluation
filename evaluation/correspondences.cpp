@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 		kp_vec_2.push_back(kp);
 	}
 
-	homography = parse_file(argv[3], ' ');
+	homography = parse_file(argv[3], ' ', CV_32F);
 	kp_dist_thresh = stof(argv[4]);
 	results_file = argv[5];
 	overwrite = stoi(argv[6]);
