@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 		f.close();
 	}
 	else {
-		cout << "Number of correspondences already stored at " << results_file << "\n";
+		cout << "Number of correspondences already stored at " << results_file << "\n\n";
 	}
 
 	return 0;
