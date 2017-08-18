@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 	vector<KeyPoint> kp_vec_1, kp_vec_2;
 	vector< vector<int> > correct_matches;
 	float kp_dist_thresh;
-	int overwrite;
+	int overwrite = 1;
 
 	if(argc < 7) {
 		cout << "Usage ./correspondences keypoint_1 keypoint_2 homography kp_dist_thresh results_file overwrite_flag\n";
